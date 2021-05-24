@@ -1,0 +1,39 @@
+{
+    "name": "skale-ima-js",
+    "description": "ima.js library",
+    "private": true,
+    "license": "AGPL-3.0",
+    "author": "SKALE Labs and contributors",
+    "scripts": {
+        "postinstall": "echo \"----- initializing test tokens\n\" && cd test_tokens && ./init.sh && cd ..",
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "lint-check": "eslint ./*.js",
+        "lint-fix": "eslint ./*.js --fix"
+    },
+    "keywords": [
+        "SKALE",
+        "blockchain",
+        "block",
+        "chain",
+        "IMA"
+    ],
+    "dependencies": {
+        "ethereumjs-tx": "1.3.7",
+        "ethereumjs-wallet": "1.0.1",
+        "ethereumjs-util": "7.0.7",
+        "web3": "1.3.1",
+        "request": "^2.88.2",
+        "solc": "0.8.2",
+        "ws": "^7.4.2"
+    },
+    "devDependencies": {
+        "eslint": "7.22.0",
+        "eslint-config-standard": "16.0.2",
+        "eslint-plugin-import": "2.22.1",
+        "eslint-plugin-markdown": "2.0.0",
+        "eslint-plugin-node": "11.1.0",
+        "eslint-plugin-promise": "4.3.1",
+        "eslint-plugin-standard": "5.0.0",
+        "istanbul": "0.4.5"
+    }
+}

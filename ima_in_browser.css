@@ -1,0 +1,170 @@
+/* // SPDX-License-Identifier: AGPL-3.0-only */
+
+/**
+ * @license
+ * SKALE IMA JS
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file ima_in_browser.html
+ * @copyright SKALE Labs 2019-Present
+ */
+
+ html,
+body,
+h1, h2, h3, h4, h5, h6,
+table, thead, tbody, tr, th, td,
+div, p,
+ul, ol, li,
+a {
+    font-family: "Helvetica", "Arial";
+    color: #E0E0E0;
+    background-color: black;
+}
+
+html,
+body {
+    overflow: visible;
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+body {
+    padding: 10pt;
+}
+
+a, a:visited {
+    color: #FFA080;
+    text-decoration: none;
+}
+a:hover {
+    color: #FFE0C0;
+    text-decoration: underline;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #A080FF;
+    margin-top: 3pt;
+    margin-bottom: 1pt;
+}
+h1 {
+    font-size: 13pt;
+}
+h2 {
+    font-size: 10pt;
+}
+h3 {
+    margin-top: 14pt;
+}
+
+.div_logo {
+    overflow: visible;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background-color: transparent;
+    width: 100%;
+    padding-bottom: 10pt;
+    vertical-align: middle;
+    font-size: 28pt;
+    font-weight: normal;
+}
+.svg_logo {
+    display: inline-block;
+}
+.span_ima_js {
+    display: inline-block;
+    position: relative;
+    top: -5pt;
+}
+
+li,
+p,
+div,
+a,
+input {
+    font-size: 10pt;
+}
+
+table.main_table {
+    width: 100%;
+}
+
+.main_table {
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+td.main_table {
+    width: 50%;
+    vertical-align: top;
+}
+
+td.main_table_commands {
+    width: 40%;
+}
+
+td.main_table_log {
+    width: auto;
+}
+
+.div_log {
+    font-family: Monospace;
+    font-size: 8pt;
+    overflow: visible;
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.value_input, .balance_input, .eth_private_key, .eth_address, .eth_url, .eth_chain_name, .eth_chain_id {
+    color: #E0E0E0;
+    background-color: black;
+    border: 1px solid yellow;
+    padding: 2pt;
+    margin: 0;
+    font-size: 9pt;
+}
+
+.value_input, .balance_input {
+    width: 320pt;
+    text-align: right;
+}
+.owner721input {
+    text-align: center;
+}
+
+.eth_private_key, .eth_address {
+    width: 320pt;
+    text-align: center;
+}
+
+.eth_address, .balance_input {
+    border: 1px solid black;
+}
+
+.eth_url {
+    width: 100pt;
+}
+.eth_chain_name {
+    width: 50pt;
+}
+.eth_chain_id {
+    width: 30pt;
+}
+
