@@ -31,6 +31,43 @@ const ethereumjs_util = rq ? rq( "ethereumjs-util" ) : ethereumjs.Util;
 const ws = rq ? rq( "ws" ) : null;
 const request = rq ? rq( "request" ) : null;
 
+function validateRadix( value, radix ) {
+    value = "" + ( value ? value.toString() : "10" );
+    value = value.trim();
+    radix = ( radix == null || radix == undefined )
+        ? ( ( value.length > 2 && value[0] == "0" && ( value[1] == "x" || value[1] == "X" ) ) ? 16 : 10 )
+        : parseInt( radix, 10 );
+    return radix;
+}
+
+function validateInteger( value, radix ) {
+    try {
+        value = "" + value;
+        value = value.trim();
+        if( value.length < 1 )
+            return false;
+        radix = validateRadix( value, radix );
+        if( ( !isNaN( value ) ) &&
+            ( parseInt( Number( value ), radix ) == value || radix !== 10 ) &&
+            ( !isNaN( parseInt( value, radix ) ) )
+        )
+            return true;
+    } catch ( err ) {
+    }
+    return false;
+}
+
+function toInteger( value, radix ) {
+    try {
+        radix = validateRadix( value, radix );
+        if( !validateInteger( value, radix ) )
+            return NaN;
+        return parseInt( value, radix );
+    } catch ( err ) {
+    }
+    return false;
+}
+
 function toURL( s ) {
     try {
         if( s == null || s == undefined )
@@ -227,7 +264,7 @@ async function rpc_call_create( strURL, opts, fn ) {
 function generate_random_integer_in_range( min, max ) {
     min = Math.ceil( min );
     max = Math.floor( max );
-    return parseInt( Math.floor( Math.random() * ( max - min + 1 ) ) + min );
+    return parseIntOrHex( Math.floor( Math.random() * ( max - min + 1 ) ) + min );
 }
 
 function generate_random_rpc_call_id() {
@@ -253,7 +290,7 @@ class ima_TransactionCustomizer {
         this.gasMultiplier = gasMultiplier ? ( 0.0 + gasMultiplier ) : 1.25;
     }
     async computeGasPrice( w3, maxGasPrice ) {
-        const gasPrice = parseInt( await w3.eth.getGasPrice() );
+        const gasPrice = parseIntOrHex( await w3.eth.getGasPrice() );
         if( gasPrice == 0 || gasPrice == null || gasPrice == undefined || gasPrice <= 1000000000 )
             return 1000000000;
         else if(
@@ -264,7 +301,7 @@ class ima_TransactionCustomizer {
             maxGasPrice != undefined
         ) {
             if( gasPrice * this.gasPriceMultiplier > maxGasPrice )
-                return parseInt( maxGasPrice );
+                return parseIntOrHex( maxGasPrice );
             else
                 return gasPrice * this.gasPriceMultiplier;
         } else
@@ -287,7 +324,7 @@ class ima_TransactionCustomizer {
             estimatedGas = 0;
         }
         estimatedGas *= this.gasMultiplier;
-        estimatedGas = parseInt( "" + estimatedGas ); // avoid using floating point
+        estimatedGas = parseIntOrHex( "" + estimatedGas ); // avoid using floating point
         if( estimatedGas == 0 )
             estimatedGas = recommendedGas;
         return estimatedGas;
@@ -308,6 +345,7 @@ class ima_chain {
             this.jo_deposit_box_eth = new this.w3.eth.Contract( this.joABI.deposit_box_eth_abi, this.joABI.deposit_box_eth_address ); // only main net
             this.jo_deposit_box_erc20 = new this.w3.eth.Contract( this.joABI.deposit_box_erc20_abi, this.joABI.deposit_box_erc20_address ); // only main net
             this.jo_deposit_box_erc721 = new this.w3.eth.Contract( this.joABI.deposit_box_erc721_abi, this.joABI.deposit_box_erc721_address ); // only main net
+            this.jo_deposit_box_erc1155 = new this.w3.eth.Contract( this.joABI.deposit_box_erc1155_abi, this.joABI.deposit_box_erc1155_address ); // only main net
             this.jo_message_proxy_main_net = new this.w3.eth.Contract( this.joABI.message_proxy_mainnet_abi, this.joABI.message_proxy_mainnet_address );
             this.jo_community_pool = new this.w3.eth.Contract( this.joABI.community_pool_abi, this.joABI.community_pool_address ); // only main net
         } else {
@@ -315,6 +353,7 @@ class ima_chain {
             this.jo_token_manager_eth = new this.w3.eth.Contract( this.joABI.token_manager_eth_abi, this.joABI.token_manager_eth_address );
             this.jo_token_manager_erc20 = new this.w3.eth.Contract( this.joABI.token_manager_erc20_abi, this.joABI.token_manager_erc20_address );
             this.jo_token_manager_erc721 = new this.w3.eth.Contract( this.joABI.token_manager_erc721_abi, this.joABI.token_manager_erc721_address );
+            this.jo_token_manager_erc1155 = new this.w3.eth.Contract( this.joABI.token_manager_erc1155_abi, this.joABI.token_manager_erc1155_address );
             // this.eth_erc721 = new this.w3.eth.Contract( this.joABI.eth_erc721_abi, this.joABI.eth_erc721_address ); // only s-chain
             this.eth_erc20 = new this.w3.eth.Contract( this.joABI.eth_erc20_abi, this.joABI.eth_erc20_address ); // only s-chain
             this.jo_community_locker = new this.w3.eth.Contract( this.joABI.community_locker_abi, this.joABI.community_locker_address ); // only s-chain
@@ -483,30 +522,32 @@ function w3_2_url( w3 ) {
     return w3provider_2_url( w3.currentProvider );
 }
 
-function parseIntSafer( s ) {
+function parseIntOrHex( s ) {
     if( typeof s != "string" )
         return parseInt( s );
     s = s.trim();
     if( s.length > 2 && s[0] == "0" && ( s[1] == "x" || s[1] == "X" ) )
-        return parseInt( s, 10 );
-    return parseInt( s, 16 );
+        return parseInt( s, 16 );
+    return parseInt( s, 10 );
 }
 
 async function wait_for_next_block_to_appear( w3 ) {
     const nBlockNumber = await get_web3_blockNumber( 10, w3 );
     // console.log( "Waiting for next block to appear..." );
-    // console.log( "    ...have block " + parseIntSafer( nBlockNumber ) );
+    // console.log( "    ...have block " + parseIntOrHex( nBlockNumber ) );
     for( ; true; ) {
         await sleep( 1000 );
         const nBlockNumber2 = await get_web3_blockNumber( 10, w3 );
-        // console.log( "    ...have block " + parseIntSafer( nBlockNumber2 ) );
+        // console.log( "    ...have block " + parseIntOrHex( nBlockNumber2 ) );
         if( nBlockNumber2 > nBlockNumber )
             break;
     }
 }
 
 async function get_web3_blockNumber( attempts, w3 ) {
-    const allAttempts = parseInt( attempts ) < 1 ? 1 : parseInt( attempts );
+    let allAttempts = parseIntOrHex( attempts );
+    if( allAttempts < 1 )
+        allAttempts = 1;
     let nLatestBlockNumber = "";
     try {
         nLatestBlockNumber = await w3.eth.getBlockNumber();
@@ -526,8 +567,9 @@ async function get_web3_blockNumber( attempts, w3 ) {
 }
 
 async function get_web3_pastEvents( attempts, joContract, strEventName, nBlockFrom, nBlockTo, joFilter ) {
-    const allAttempts = parseInt( attempts ) < 1 ? 1 : parseInt( attempts );
-
+    let allAttempts = parseIntOrHex( attempts );
+    if( allAttempts < 1 )
+        allAttempts = 1;
     let joAllEventsInBlock = "";
     try {
         joAllEventsInBlock = await joContract.getPastEvents( "" + strEventName, {
@@ -555,7 +597,9 @@ async function get_web3_pastEvents( attempts, joContract, strEventName, nBlockFr
 }
 
 async function get_web3_transactionCount( attempts, w3, address, param ) {
-    const allAttempts = parseInt( attempts ) < 1 ? 1 : parseInt( attempts );
+    let allAttempts = parseIntOrHex( attempts );
+    if( allAttempts < 1 )
+        allAttempts = 1;
     let txc = "";
     try {
         txc = await w3.eth.getTransactionCount( address, param );
@@ -575,7 +619,9 @@ async function get_web3_transactionCount( attempts, w3, address, param ) {
 }
 
 async function get_web3_transactionReceipt( attempts, w3, txHash ) {
-    const allAttempts = parseInt( attempts ) < 1 ? 1 : parseInt( attempts );
+    let allAttempts = parseIntOrHex( attempts );
+    if( allAttempts < 1 )
+        allAttempts = 1;
     let txReceipt = "";
     try {
         txReceipt = await w3.eth.getTransactionReceipt( txHash );
@@ -594,11 +640,24 @@ async function get_web3_transactionReceipt( attempts, w3, txHash ) {
     return txReceipt;
 }
 
-async function ima_disableAutomaticDeployERC20( sc, joAccountSrc, strSChainName ) {
-    const contractTokenManagerErc20SC = new sc.w3.eth.Contract( sc.joABI.token_manager_erc20_abi, sc.joABI.token_manager_erc20_address );
-    const methodWithArguments = contractTokenManagerErc20SC.methods.disableAutomaticDeploy(
-        strSChainName // call params
-    );
+async function impl_enableAutomaticDeploy(
+    strTokenSuffix, // example "erc20"
+    sc,
+    joAccountSrc,
+    isEnableAutomaticDeploy
+) {
+    const strTokenSuffixLC = strTokenSuffix.toLowerCase();
+    if( isEnableAutomaticDeploy === null || isEnableAutomaticDeploy === undefined )
+        isEnableAutomaticDeploy = true;
+    else
+        isEnableAutomaticDeploy = isEnableAutomaticDeploy ? true : false;
+    //
+    const contractTokenManager = new sc.w3.eth.Contract(
+        sc.joABI["token_manager_" + strTokenSuffixLC + "_abi"],
+        sc.joABI["token_manager_" + strTokenSuffixLC + "_address"] );
+    //
+    const strContractMethodName = isEnableAutomaticDeploy ? "enableAutomaticDeploy" : "disableAutomaticDeploy";
+    const methodWithArguments = contractTokenManager.methods[strContractMethodName]();
     const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
     const gasPrice = 10000000000;
     const strAddressFrom = get_account_wallet_address( sc.w3, joAccountSrc );
@@ -608,7 +667,7 @@ async function ima_disableAutomaticDeployERC20( sc, joAccountSrc, strSChainName 
         nonce: tcnt,
         gasPrice: gasPrice,
         gasLimit: 3000000,
-        to: contractTokenManagerErc20SC.options.address,
+        to: contractTokenManager.options.address,
         data: dataTx
     };
     const tx = compose_tx_instance( rawTx );
@@ -623,33 +682,16 @@ async function ima_disableAutomaticDeployERC20( sc, joAccountSrc, strSChainName 
     return joReceipt;
 }
 
-async function ima_disableAutomaticDeployERC721( sc, joAccountSrc, strSChainName ) {
-    const contractTokenManagerErc721SC = new sc.w3.eth.Contract( sc.joABI.token_manager_erc721_abi, sc.joABI.token_manager_erc721_address );
-    const methodWithArguments = contractTokenManagerErc721SC.methods.disableAutomaticDeploy(
-        strSChainName // call params
-    );
-    const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
-    const gasPrice = 10000000000;
-    const strAddressFrom = get_account_wallet_address( sc.w3, joAccountSrc );
-    const tcnt = await get_web3_transactionCount( 10, sc.w3, strAddressFrom, null ); // await sc.w3.eth.getTransactionCount( strAddressFrom, null );
-    const rawTx = {
-        chainId: sc.chainID,
-        nonce: tcnt,
-        gasPrice: gasPrice,
-        gasLimit: 3000000,
-        to: contractTokenManagerErc721SC.options.address,
-        data: dataTx
-    };
-    const tx = compose_tx_instance( rawTx );
-    const joSR = await safe_sign_transaction_with_account( sc.w3, tx, rawTx, joAccountSrc );
-    let joReceipt = null;
-    if( joSR.joACI.isAutoSend )
-        joReceipt = await get_web3_transactionReceipt( 10, sc.w3, joSR.txHashSent ); // joReceipt = await sc.w3.eth.getTransactionReceipt( joSR.txHashSent );
-    else {
-        const serializedTx = tx.serialize();
-        joReceipt = await safe_send_signed_transaction( sc.w3, serializedTx );
-    }
-    return joReceipt;
+async function ima_enableAutomaticDeployERC20( sc, joAccountSrc, isEnableAutomaticDeploy ) {
+    return await impl_enableAutomaticDeploy( "erc20", sc, joAccountSrc, isEnableAutomaticDeploy );
+}
+
+async function ima_enableAutomaticDeployERC721( sc, joAccountSrc, isEnableAutomaticDeploy ) {
+    return await impl_enableAutomaticDeploy( "erc721", sc, joAccountSrc, isEnableAutomaticDeploy );
+}
+
+async function ima_enableAutomaticDeployERC1155( sc, joAccountSrc, isEnableAutomaticDeploy ) {
+    return await impl_enableAutomaticDeploy( "erc1155", sc, joAccountSrc, isEnableAutomaticDeploy );
 }
 
 async function ima_addERC20TokenByOwnerMN( mn, joAccountSrc, strSChainName, strContractAddressOnMainnet ) {
@@ -684,6 +726,35 @@ async function ima_addERC20TokenByOwnerMN( mn, joAccountSrc, strSChainName, strC
 async function ima_addERC721TokenByOwnerMN( mn, joAccountSrc, strSChainName, strContractAddressOnMainnet ) {
     const contract = mn.jo_deposit_box_erc721;
     const methodWithArguments = contract.methods.addERC721TokenByOwner(
+        strSChainName, strContractAddressOnMainnet // call params
+    );
+    const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
+    const gasPrice = 10000000000;
+    const strAddressFrom = get_account_wallet_address( mn.w3, joAccountSrc );
+    const tcnt = await get_web3_transactionCount( 10, mn.w3, strAddressFrom, null ); // await mn.w3.eth.getTransactionCount( strAddressFrom, null );
+    const rawTx = {
+        chainId: mn.chainID,
+        nonce: tcnt,
+        gasPrice: gasPrice,
+        gasLimit: 3000000,
+        to: contract.options.address,
+        data: dataTx
+    };
+    const tx = compose_tx_instance( rawTx );
+    const joSR = await safe_sign_transaction_with_account( mn.w3, tx, rawTx, joAccountSrc );
+    let joReceipt = null;
+    if( joSR.joACI.isAutoSend )
+        joReceipt = await get_web3_transactionReceipt( 10, mn.w3, joSR.txHashSent ); // joReceipt = await mn.w3.eth.getTransactionReceipt( joSR.txHashSent );
+    else {
+        const serializedTx = tx.serialize();
+        joReceipt = await safe_send_signed_transaction( mn.w3, serializedTx );
+    }
+    return joReceipt;
+}
+
+async function ima_addERC1155TokenByOwnerMN( mn, joAccountSrc, strSChainName, strContractAddressOnMainnet ) {
+    const contract = mn.jo_deposit_box_erc1155;
+    const methodWithArguments = contract.methods.addERC1155TokenByOwner(
         strSChainName, strContractAddressOnMainnet // call params
     );
     const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
@@ -770,6 +841,36 @@ async function ima_addERC721TokenByOwnerSC( sc, joAccountSrc, strSChainName, str
     return joReceipt;
 }
 
+async function ima_addERC1155TokenByOwnerSC( sc, joAccountSrc, strSChainName, strContractAddressOnMainnet, strContractAddressOnSchain ) {
+    const contractTokenManagerErc1155SC = new sc.w3.eth.Contract( sc.joABI.token_manager_erc1155_abi, sc.joABI.token_manager_erc1155_address );
+    const methodWithArguments = contractTokenManagerErc1155SC.methods.addERC1155TokenByOwner(
+        //strSChainName,
+        strContractAddressOnMainnet, strContractAddressOnSchain // call params
+    );
+    const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
+    const gasPrice = 10000000000;
+    const strAddressFrom = get_account_wallet_address( sc.w3, joAccountSrc );
+    const tcnt = await get_web3_transactionCount( 10, sc.w3, strAddressFrom, null ); // await sc.w3.eth.getTransactionCount( strAddressFrom, null );
+    const rawTx = {
+        chainId: sc.chainID,
+        nonce: tcnt,
+        gasPrice: gasPrice,
+        gasLimit: 3000000,
+        to: contractTokenManagerErc1155SC.options.address,
+        data: dataTx
+    };
+    const tx = compose_tx_instance( rawTx );
+    const joSR = await safe_sign_transaction_with_account( sc.w3, tx, rawTx, joAccountSrc );
+    let joReceipt = null;
+    if( joSR.joACI.isAutoSend )
+        joReceipt = await get_web3_transactionReceipt( 10, sc.w3, joSR.txHashSent ); // joReceipt = await sc.w3.eth.getTransactionReceipt( joSR.txHashSent );
+    else {
+        const serializedTx = tx.serialize();
+        joReceipt = await safe_send_signed_transaction( sc.w3, serializedTx );
+    }
+    return joReceipt;
+}
+
 async function ima_getETHbalance( chain, walletAddress ) {
     if( chain.isMainNet() ) {
         const balance = await chain.w3.eth.getBalance( walletAddress );
@@ -798,6 +899,21 @@ async function ima_getERC721ownerOf( chain, walletAddress, tokenInfoOrAddress, t
     return "";
 }
 
+async function ima_getERC1155balance( chain, walletAddress, tokenInfoOrAddress, tokenID ) {
+    const tokenInfo = chain.extractTokenInfo( tokenInfoOrAddress );
+    const contract = new chain.w3.eth.Contract( tokenInfo.abi, tokenInfo.address );
+    const balance = await contract.methods.balanceOf( walletAddress, tokenID ).call( { from: walletAddress } );
+    return balance;
+}
+
+async function ima_getERC1155balanceOfBatch( chain, arrWalletAddresses, tokenInfoOrAddress, arrTokenIDs, walletAddressFrom ) {
+    walletAddressFrom = walletAddressFrom || arrWalletAddresses[0];
+    const tokenInfo = chain.extractTokenInfo( tokenInfoOrAddress );
+    const contract = new chain.w3.eth.Contract( tokenInfo.abi, tokenInfo.address );
+    const arrBalances = await contract.methods.balanceOfBatch( arrWalletAddresses, arrTokenIDs ).call( { from: walletAddressFrom } );
+    return arrBalances;
+}
+
 async function get_contract_call_events( w3, joContract, strEventName, nBlockNumber, strTxHash, joFilter ) {
     joFilter = joFilter || {};
     let nBlockFrom = nBlockNumber - 10, nBlockTo = nBlockNumber + 10;
@@ -818,45 +934,45 @@ async function get_contract_call_events( w3, joContract, strEventName, nBlockNum
 
 function compose_tx_instance( rawTx ) {
     rawTx = JSON.parse( JSON.stringify( rawTx ) ); // clone
-    let joOpts = null;
-    if( "chainId" in rawTx && typeof rawTx.chainId == "number" ) {
-        switch ( rawTx.chainId ) {
-        case 1:
-            delete rawTx.chainId;
-            joOpts = joOpts || { };
-            joOpts.chain = "mainnet";
-            break;
-        case 3:
-            delete rawTx.chainId;
-            joOpts = joOpts || { };
-            joOpts.chain = "ropsten";
-            break;
-        case 4:
-            delete rawTx.chainId;
-            joOpts = joOpts || { };
-            joOpts.chain = "rinkeby";
-            break;
-        case 5:
-            delete rawTx.chainId;
-            joOpts = joOpts || { };
-            joOpts.chain = "goerli";
-            break;
-        case 2018:
-            delete rawTx.chainId;
-            joOpts = joOpts || { };
-            joOpts.chain = "dev";
-            break;
-        // default:
-        //     joOpts = joOpts || { };
-        //     joOpts.common = joOpts.common || { };
-        //     joOpts.common.name = "chain" + rawTx.chainId;
-        //     // joOpts.common.networkId = 123;
-        //     joOpts.common.chainId = parseInt( rawTx.chainId );
-        //     // joOpts.hardfork = "petersburg";
-        //     delete rawTx.chainId;
-        //     break;
-        } // switch( rawTx.chainId )
-    }
+    const joOpts = null;
+    // if( "chainId" in rawTx && typeof rawTx.chainId == "number" ) {
+    //     switch ( rawTx.chainId ) {
+    //     case 1:
+    //         delete rawTx.chainId;
+    //         joOpts = joOpts || { };
+    //         joOpts.chain = "mainnet";
+    //         break;
+    //     case 3:
+    //         delete rawTx.chainId;
+    //         joOpts = joOpts || { };
+    //         joOpts.chain = "ropsten";
+    //         break;
+    //     case 4:
+    //         delete rawTx.chainId;
+    //         joOpts = joOpts || { };
+    //         joOpts.chain = "rinkeby";
+    //         break;
+    //     case 5:
+    //         delete rawTx.chainId;
+    //         joOpts = joOpts || { };
+    //         joOpts.chain = "goerli";
+    //         break;
+    //     case 2018:
+    //         delete rawTx.chainId;
+    //         joOpts = joOpts || { };
+    //         joOpts.chain = "dev";
+    //         break;
+    //     // default:
+    //     //     joOpts = joOpts || { };
+    //     //     joOpts.common = joOpts.common || { };
+    //     //     joOpts.common.name = "chain" + rawTx.chainId;
+    //     //     // joOpts.common.networkId = 123;
+    //     //     joOpts.common.chainId = parseIntOrHex( rawTx.chainId );
+    //     //     // joOpts.hardfork = "petersburg";
+    //     //     delete rawTx.chainId;
+    //     //     break;
+    //     } // switch( rawTx.chainId )
+    // }
     let tx = null;
     if( joOpts )
         tx = new ethereumjs_tx( rawTx, joOpts );
@@ -978,7 +1094,7 @@ async function safe_sign_transaction_with_account( w3, tx, rawTx, joAccount ) {
                 if( err )
                     return;
                 const joNeededResult = {
-                    "v": parseInt( joOut.result.signature_v, 10 ),
+                    "v": parseIntOrHex( joOut.result.signature_v, 10 ),
                     "r": "" + joOut.result.signature_r,
                     "s": "" + joOut.result.signature_s
                 };
@@ -1297,7 +1413,7 @@ async function ima_withdrawERC20fromSchain( chainFrom, chainTo, joAccountFrom, j
     let gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
     const estimatedGas_approve = await transactionCustomizer.computeGas( methodWithArguments_approve, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
     await dry_run_call( chainFrom.w3, methodWithArguments_approve, joAccountFrom, opts.isIgnoreDRC_approve ? true : false, gasPrice, estimatedGas_approve );
-    let tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // parseInt( await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) );
+    let tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
     const rawTxApprove = {
         chainId: chainFrom.chainID,
         from: accountForSchain,
@@ -1327,7 +1443,7 @@ async function ima_withdrawERC20fromSchain( chainFrom, chainTo, joAccountFrom, j
     if( g_bWaitForNextBlockOnSChain )
         await wait_for_next_block_to_appear( chainFrom.w3 );
     const estimatedGas_rawExitToMainERC20 = await transactionCustomizer.computeGas( methodWithArguments_rawExitToMainERC20, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
-    tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // parseInt( await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) );
+    tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
     gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
     await dry_run_call( chainFrom.w3, methodWithArguments_rawExitToMainERC20, joAccountFrom, opts.isIgnoreDRC_rawExitToMainERC20 ? true : false, gasPrice, estimatedGas_rawExitToMainERC20 );
     const rawTxExitToMainERC20 = {
@@ -1553,6 +1669,395 @@ async function ima_withdrawERC721fromSchain( chainFrom, chainTo, joAccountFrom, 
     // print_gas_usage_report_from_array( "ERC-721 PAYMENT FROM S-CHAIN", jarrReceipts );
 }
 
+async function ima_depositERC1155toSchain( chainFrom, chainTo, joAccountFrom, joAccountTo, tokenInfoOrAddressFrom, tokenId, tokenAmount, opts ) {
+    const tokenInfoFrom = chainFrom.extractTokenInfo( tokenInfoOrAddressFrom );
+    transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerMN;
+    const jarrReceipts = []; // do_erc1155_payment_from_main_net
+    let tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    const contractERC1155 = new chainFrom.w3.eth.Contract( tokenInfoFrom.abi, tokenInfoFrom.address );
+    const depositBoxAddress = chainFrom.jo_deposit_box_erc1155.options.address;
+    const accountForSchain = get_account_wallet_address( chainTo.w3, joAccountTo );
+    const methodWithArguments_approve = contractERC1155.methods.setApprovalForAll(
+        depositBoxAddress, true
+    );
+    const dataTxApprove = methodWithArguments_approve.encodeABI();
+    let dataTxDeposit = null;
+    const methodWithArguments_rawDepositERC1155 = chainFrom.jo_deposit_box_erc1155.methods.depositERC1155(
+        chainTo.chainName,
+        tokenInfoFrom.address,
+        accountForSchain,
+        "0x" + chainFrom.w3.utils.toBN( tokenId ).toString( 16 ),
+        "0x" + chainFrom.w3.utils.toBN( tokenAmount ).toString( 16 )
+    );
+    dataTxDeposit = methodWithArguments_rawDepositERC1155.encodeABI();
+    let gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 11550000000000 );
+    const estimatedGas_approve = await transactionCustomizer.computeGas( methodWithArguments_approve, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
+    await dry_run_call( chainFrom.w3, methodWithArguments_approve, joAccountFrom, opts.isIgnoreDRC_approve ? true : false, gasPrice, estimatedGas_approve );
+    //
+    const rawTxApprove = {
+        chainId: chainFrom.chainID,
+        from: get_account_wallet_address( chainFrom.w3, joAccountFrom ), // accountForMainnet
+        nonce: "0x" + tcnt.toString( 16 ),
+        data: dataTxApprove,
+        to: tokenInfoFrom.address,
+        gasPrice: gasPrice, // 0
+        gas: estimatedGas_approve
+    };
+    const txApprove = compose_tx_instance( rawTxApprove );
+    const joApproveSR = await safe_sign_transaction_with_account( chainFrom.w3, txApprove, rawTxApprove, joAccountFrom );
+    let joReceiptApprove = null;
+    if( joApproveSR.joACI.isAutoSend )
+        joReceiptApprove = await get_web3_transactionReceipt( 10, chainFrom.w3, joApproveSR.txHashSent ); // joReceiptApprove = await chainFrom.w3.eth.getTransactionReceipt( joApproveSR.txHashSent );
+    else {
+        const serializedTxApprove = txApprove.serialize();
+        joReceiptApprove = await safe_send_signed_transaction( chainFrom.w3, serializedTxApprove );
+    }
+    if( joReceiptApprove && typeof joReceiptApprove == "object" && "gasUsed" in joReceiptApprove ) {
+        jarrReceipts.push( {
+            "description": "do_erc1155_payment_from_main_net/approve",
+            "receipt": joReceiptApprove
+        } );
+    }
+    if( g_nSleepBetweenTransactionsOnSChainMilliseconds )
+        await sleep( g_nSleepBetweenTransactionsOnSChainMilliseconds );
+    // if( g_bWaitForNextBlockOnSChain )
+    //     await wait_for_next_block_to_appear( chainFrom.w3 );
+    gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
+    const estimatedGas_deposit = await transactionCustomizer.computeGas( methodWithArguments_rawDepositERC1155, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
+    await dry_run_call( chainFrom.w3, methodWithArguments_rawDepositERC1155, joAccountFrom, opts.isIgnoreDRC_rawDepositERC1155 ? true : false, gasPrice, estimatedGas_deposit );
+    tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    // tcnt += 1;
+    const rawTxDeposit = {
+        chainId: chainFrom.chainID,
+        from: get_account_wallet_address( chainFrom.w3, joAccountFrom ), // accountForMainnet
+        nonce: "0x" + tcnt.toString( 16 ),
+        data: dataTxDeposit,
+        to: depositBoxAddress,
+        gasPrice: gasPrice, // 0
+        gas: estimatedGas_deposit //,
+        //value: "0x" + chainFrom.w3.utils.toBN( opts.weiReserve ).toString( 16 )
+    };
+    const txDeposit = compose_tx_instance( rawTxDeposit );
+    const joDepositSR = await safe_sign_transaction_with_account( chainFrom.w3, txDeposit, rawTxDeposit, joAccountFrom );
+    let joReceiptDeposit = null;
+    if( joDepositSR.joACI.isAutoSend )
+        joReceiptDeposit = await get_web3_transactionReceipt( 10, chainFrom.w3, joDepositSR.txHashSent ); // await chainFrom.w3.eth.getTransactionReceipt( joDepositSR.txHashSent );
+    else {
+        const serializedTxDeposit = txDeposit.serialize();
+        joReceiptDeposit = await safe_send_signed_transaction( chainFrom.w3, serializedTxDeposit );
+    }
+    if( joReceiptDeposit && typeof joReceiptDeposit == "object" && "gasUsed" in joReceiptDeposit ) {
+        jarrReceipts.push( {
+            "description": "do_erc1155_payment_from_main_net/deposit",
+            "receipt": joReceiptDeposit
+        } );
+    }
+    const joReceipt = joReceiptDeposit;
+    if( chainFrom.jo_message_proxy_main_net ) {
+        await sleep( g_nSleepBeforeFetchOutgoingMessageEvent );
+        const joEvents = await get_contract_call_events( chainFrom.w3, chainFrom.jo_message_proxy_main_net, "OutgoingMessage", joReceipt.blockNumber, joReceipt.transactionHash, {} );
+        if( joEvents.length <= 0 )
+            throw new Error( "(depositERC1155toSchain) Verification failed for the \"OutgoingMessage\" event of the \"MessageProxy\"/" + chainFrom.jo_message_proxy_main_net.options.address + " contract, no events found" );
+    }
+    // // Must-absent event(s) analysis as indicator(s) of success
+    // if( chainFrom.jo_deposit_box_erc1155 ) {
+    //     const joEvents = await get_contract_call_events( chainFrom.w3, chainFrom.jo_deposit_box_erc1155, "Error", joReceipt.blockNumber, joReceipt.transactionHash, {} );
+    //     if( joEvents.length != 0 )
+    //         throw new Error( "(depositERC1155toSchain) Verification failed for the \"Error\" event of the \"DepositBoxERC1155\"/" + chainFrom.jo_deposit_box_erc1155.options.address + " contract, no events found" );
+    // }
+    // print_gas_usage_report_from_array( "ERC-1155 PAYMENT FROM MAIN NET", jarrReceipts );
+}
+
+async function ima_withdrawERC1155fromSchain( chainFrom, chainTo, joAccountFrom, joAccountTo, tokenInfoOrAddressFrom, tokenInfoOrAddressTo, tokenId, tokenAmount, opts ) {
+    const tokenInfoFrom = chainFrom.extractTokenInfo( tokenInfoOrAddressFrom );
+    const tokenInfoTo = chainTo.extractTokenInfo( tokenInfoOrAddressTo );
+    transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerSC;
+    const jarrReceipts = []; // do_erc1155_payment_from_s_chain
+    const accountForMainnet = get_account_wallet_address( chainTo.w3, joAccountTo );
+    const accountForSchain = get_account_wallet_address( chainFrom.w3, joAccountFrom );
+    const tokenManagerAddress = chainFrom.jo_token_manager_erc1155.options.address;
+    const contractERC1155 = new chainFrom.w3.eth.Contract( tokenInfoFrom.abi, tokenInfoFrom.address );
+    const methodWithArguments_approve = contractERC1155.methods.setApprovalForAll(
+        tokenManagerAddress, true
+    );
+    const dataTxApprove = methodWithArguments_approve.encodeABI();
+    const methodWithArguments_rawExitToMainERC1155 = chainFrom.jo_token_manager_erc1155.methods.exitToMainERC1155(
+        tokenInfoTo.address,
+        accountForMainnet,
+        "0x" + chainTo.w3.utils.toBN( tokenId ).toString( 16 ),
+        "0x" + chainTo.w3.utils.toBN( tokenAmount ).toString( 16 )
+    );
+    const dataExitToMainERC1155 = methodWithArguments_rawExitToMainERC1155.encodeABI();
+    let gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
+    const estimatedGas_approve = await transactionCustomizer.computeGas( methodWithArguments_approve, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
+    await dry_run_call( chainFrom.w3, methodWithArguments_approve, joAccountFrom, opts.isIgnoreDRC_approve ? true : false, gasPrice, estimatedGas_approve );
+    let tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    const rawTxApprove = {
+        chainId: chainFrom.chainID,
+        from: accountForSchain,
+        nonce: "0x" + tcnt.toString( 16 ),
+        data: dataTxApprove,
+        to: tokenInfoFrom.address,
+        gasPrice: gasPrice,
+        gas: estimatedGas_approve
+    };
+    const txApprove = compose_tx_instance( rawTxApprove );
+    const joApproveSR = await safe_sign_transaction_with_account( chainFrom.w3, txApprove, rawTxApprove, joAccountFrom );
+    let joReceiptApprove = null;
+    if( joApproveSR.joACI.isAutoSend && joDepositSR.joACI.isAutoSend )
+        joReceiptApprove = await get_web3_transactionReceipt( 10, chainFrom.w3, joApproveSR.txHashSent ); // await chainFrom.w3.eth.getTransactionReceipt( joApproveSR.txHashSent );
+    else {
+        const serializedTxApprove = txApprove.serialize();
+        joReceiptApprove = await safe_send_signed_transaction( chainFrom.w3, serializedTxApprove );
+    }
+    if( joReceiptApprove && typeof joReceiptApprove == "object" && "gasUsed" in joReceiptApprove ) {
+        jarrReceipts.push( {
+            "description": "do_erc1155_payment_from_s_chain/approve",
+            "receipt": joReceiptApprove
+        } );
+    }
+    if( g_nSleepBetweenTransactionsOnSChainMilliseconds )
+        await sleep( g_nSleepBetweenTransactionsOnSChainMilliseconds );
+    if( g_bWaitForNextBlockOnSChain )
+        await wait_for_next_block_to_appear( chainFrom.w3 );
+    const estimatedGas_rawExitToMainERC1155 = await transactionCustomizer.computeGas( methodWithArguments_rawExitToMainERC1155, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
+    tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
+    await dry_run_call( chainFrom.w3, methodWithArguments_rawExitToMainERC1155, joAccountFrom, opts.isIgnoreDRC_rawExitToMainERC1155 ? true : false, gasPrice, estimatedGas_rawExitToMainERC1155 );
+    const rawTxExitToMainERC1155 = {
+        chainId: chainFrom.chainID,
+        from: accountForSchain,
+        nonce: "0x" + tcnt.toString( 16 ),
+        data: dataExitToMainERC1155,
+        to: tokenManagerAddress,
+        gasPrice: gasPrice,
+        gas: estimatedGas_rawExitToMainERC1155
+    };
+    const txExitToMainERC1155 = compose_tx_instance( rawTxExitToMainERC1155 );
+    const joExitToMainERC1155SR = await safe_sign_transaction_with_account( chainFrom.w3, txExitToMainERC1155, rawTxExitToMainERC1155, joAccountFrom );
+    let joReceiptExitToMainERC1155 = null;
+    if( joExitToMainERC1155SR.joACI.isAutoSend )
+        joReceiptExitToMainERC1155 = await get_web3_transactionReceipt( 10, chainFrom.w3, joExitToMainERC1155SR.txHashSent ); // await chainFrom.w3.eth.getTransactionReceipt( joExitToMainERC1155SR.txHashSent );
+    else {
+        const serializedTxExitToMainERC1155 = txExitToMainERC1155.serialize();
+        joReceiptExitToMainERC1155 = await safe_send_signed_transaction( chainFrom.w3, serializedTxExitToMainERC1155 );
+    }
+    if( joReceiptExitToMainERC1155 && typeof joReceiptExitToMainERC1155 == "object" && "gasUsed" in joReceiptExitToMainERC1155 ) {
+        jarrReceipts.push( {
+            "description": "do_erc1155_payment_from_s_chain/exit-to-main",
+            "receipt": joReceiptExitToMainERC1155
+        } );
+    }
+    const joReceipt = joReceiptExitToMainERC1155;
+    // Must-have event(s) analysis as indicator(s) of success
+    if( chainFrom.jo_message_proxy_s_chain ) {
+        await sleep( g_nSleepBeforeFetchOutgoingMessageEvent );
+        const joEvents = await get_contract_call_events( chainFrom.w3, chainFrom.jo_message_proxy_s_chain, "OutgoingMessage", joReceipt.blockNumber, joReceipt.transactionHash, {} );
+        if( joEvents.length <= 0 )
+            throw new Error( "(withdrawERC1155fromSchain) Verification failed for the \"OutgoingMessage\" event of the \"MessageProxy\"/" + chainFrom.jo_message_proxy_s_chain.options.address + " contract, no events found" );
+    }
+    // print_gas_usage_report_from_array( "ERC-1155 PAYMENT FROM S-CHAIN", jarrReceipts );
+}
+
+// async function prepare_array_for_call1155( arrSrc, chainFrom ) {
+//     const arrDst = [];
+//     for( let i = 0; i < arrSrc.length; ++ i ) {
+//         // arrDst.push( "0x" + chainFrom.w3.utils.toBN( arrSrc[i] ).toString( 16 ) );
+//         arrDst.push( toInteger( arrSrc[i] ) );
+//     }
+//     return arrDst;
+// }
+
+async function ima_depositBatchOfERC1155toSchain( chainFrom, chainTo, joAccountFrom, joAccountTo, tokenInfoOrAddressFrom, arrTokenIDs, arrTokenAmounts, opts ) {
+    const tokenInfoFrom = chainFrom.extractTokenInfo( tokenInfoOrAddressFrom );
+    transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerMN;
+    const jarrReceipts = []; // do_batch_erc1155_payment_from_main_net
+    let tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    const contractERC1155 = new chainFrom.w3.eth.Contract( tokenInfoFrom.abi, tokenInfoFrom.address );
+    const depositBoxAddress = chainFrom.jo_deposit_box_erc1155.options.address;
+    const accountForSchain = get_account_wallet_address( chainTo.w3, joAccountTo );
+    const methodWithArguments_approve = contractERC1155.methods.setApprovalForAll(
+        depositBoxAddress, true
+    );
+    const dataTxApprove = methodWithArguments_approve.encodeABI();
+    let dataTxBatchDeposit = null;
+    const methodWithArguments_depositERC1155Batch = chainFrom.jo_deposit_box_erc1155.methods.depositERC1155Batch(
+        chainTo.chainName,
+        tokenInfoFrom.address,
+        accountForSchain,
+        arrTokenIDs, // prepare_array_for_call1155( arrTokenIDs, chainFrom ),
+        arrTokenAmounts // prepare_array_for_call1155( arrTokenAmounts, chainFrom )
+    );
+    dataTxBatchDeposit = methodWithArguments_depositERC1155Batch.encodeABI();
+    let gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 11550000000000 );
+    const estimatedGas_approve = await transactionCustomizer.computeGas( methodWithArguments_approve, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
+    await dry_run_call( chainFrom.w3, methodWithArguments_approve, joAccountFrom, opts.isIgnoreDRC_approve ? true : false, gasPrice, estimatedGas_approve );
+    //
+    const rawTxApprove = {
+        chainId: chainFrom.chainID,
+        from: get_account_wallet_address( chainFrom.w3, joAccountFrom ), // accountForMainnet
+        nonce: "0x" + tcnt.toString( 16 ),
+        data: dataTxApprove,
+        to: tokenInfoFrom.address,
+        gasPrice: gasPrice, // 0
+        gas: estimatedGas_approve
+    };
+    const txApprove = compose_tx_instance( rawTxApprove );
+    const joApproveSR = await safe_sign_transaction_with_account( chainFrom.w3, txApprove, rawTxApprove, joAccountFrom );
+    let joReceiptApprove = null;
+    if( joApproveSR.joACI.isAutoSend )
+        joReceiptApprove = await get_web3_transactionReceipt( 10, chainFrom.w3, joApproveSR.txHashSent ); // joReceiptApprove = await chainFrom.w3.eth.getTransactionReceipt( joApproveSR.txHashSent );
+    else {
+        const serializedTxApprove = txApprove.serialize();
+        joReceiptApprove = await safe_send_signed_transaction( chainFrom.w3, serializedTxApprove );
+    }
+    if( joReceiptApprove && typeof joReceiptApprove == "object" && "gasUsed" in joReceiptApprove ) {
+        jarrReceipts.push( {
+            "description": "do_batch_erc1155_payment_from_main_net/approve",
+            "receipt": joReceiptApprove
+        } );
+    }
+    if( g_nSleepBetweenTransactionsOnSChainMilliseconds )
+        await sleep( g_nSleepBetweenTransactionsOnSChainMilliseconds );
+    // if( g_bWaitForNextBlockOnSChain )
+    //     await wait_for_next_block_to_appear( chainFrom.w3 );
+    gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
+    const estimatedGas_deposit = await transactionCustomizer.computeGas( methodWithArguments_depositERC1155Batch, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
+    await dry_run_call( chainFrom.w3, methodWithArguments_depositERC1155Batch, joAccountFrom, opts.isIgnoreDRC_rawDepositERC1155Batch ? true : false, gasPrice, estimatedGas_deposit );
+    tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    // tcnt += 1;
+    const rawTxDepositBatch = {
+        chainId: chainFrom.chainID,
+        from: get_account_wallet_address( chainFrom.w3, joAccountFrom ), // accountForMainnet
+        nonce: "0x" + tcnt.toString( 16 ),
+        data: dataTxBatchDeposit,
+        to: depositBoxAddress,
+        gasPrice: gasPrice, // 0
+        gas: estimatedGas_deposit //,
+        //value: "0x" + chainFrom.w3.utils.toBN( opts.weiReserve ).toString( 16 )
+    };
+    const txDepositBatch = compose_tx_instance( rawTxDepositBatch );
+    const joDepositBatchSR = await safe_sign_transaction_with_account( chainFrom.w3, txDepositBatch, rawTxDepositBatch, joAccountFrom );
+    let joReceiptDepositBatch = null;
+    if( joDepositBatchSR.joACI.isAutoSend )
+        joReceiptDepositBatch = await get_web3_transactionReceipt( 10, chainFrom.w3, joDepositBatchSR.txHashSent ); // await chainFrom.w3.eth.getTransactionReceipt( joDepositBatchSR.txHashSent );
+    else {
+        const serializedTxDeposit = txDepositBatch.serialize();
+        joReceiptDepositBatch = await safe_send_signed_transaction( chainFrom.w3, serializedTxDeposit );
+    }
+    if( joReceiptDepositBatch && typeof joReceiptDepositBatch == "object" && "gasUsed" in joReceiptDepositBatch ) {
+        jarrReceipts.push( {
+            "description": "do_batch_erc1155_payment_from_main_net/deposit",
+            "receipt": joReceiptDepositBatch
+        } );
+    }
+    const joReceipt = joReceiptDepositBatch;
+    if( chainFrom.jo_message_proxy_main_net ) {
+        await sleep( g_nSleepBeforeFetchOutgoingMessageEvent );
+        const joEvents = await get_contract_call_events( chainFrom.w3, chainFrom.jo_message_proxy_main_net, "OutgoingMessage", joReceipt.blockNumber, joReceipt.transactionHash, {} );
+        if( joEvents.length <= 0 )
+            throw new Error( "(depositBatchOfERC1155toSchain) Verification failed for the \"OutgoingMessage\" event of the \"MessageProxy\"/" + chainFrom.jo_message_proxy_main_net.options.address + " contract, no events found" );
+    }
+    // // Must-absent event(s) analysis as indicator(s) of success
+    // if( chainFrom.jo_deposit_box_erc1155 ) {
+    //     const joEvents = await get_contract_call_events( chainFrom.w3, chainFrom.jo_deposit_box_erc1155, "Error", joReceipt.blockNumber, joReceipt.transactionHash, {} );
+    //     if( joEvents.length != 0 )
+    //         throw new Error( "(depositBatchOfERC1155toSchain) Verification failed for the \"Error\" event of the \"DepositBoxERC1155\"/" + chainFrom.jo_deposit_box_erc1155.options.address + " contract, no events found" );
+    // }
+    // print_gas_usage_report_from_array( "BATCH ERC-1155 PAYMENT FROM MAIN NET", jarrReceipts );
+}
+
+async function ima_withdrawBatchOfERC1155fromSchain( chainFrom, chainTo, joAccountFrom, joAccountTo, tokenInfoOrAddressFrom, tokenInfoOrAddressTo, arrTokenIDs, arrTokenAmounts, opts ) {
+    const tokenInfoFrom = chainFrom.extractTokenInfo( tokenInfoOrAddressFrom );
+    const tokenInfoTo = chainTo.extractTokenInfo( tokenInfoOrAddressTo );
+    transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerSC;
+    const jarrReceipts = []; // do_batch_erc1155_payment_from_s_chain
+    const accountForMainnet = get_account_wallet_address( chainTo.w3, joAccountTo );
+    const accountForSchain = get_account_wallet_address( chainFrom.w3, joAccountFrom );
+    const tokenManagerAddress = chainFrom.jo_token_manager_erc1155.options.address;
+    const contractERC1155 = new chainFrom.w3.eth.Contract( tokenInfoFrom.abi, tokenInfoFrom.address );
+    const methodWithArguments_approve = contractERC1155.methods.setApprovalForAll(
+        tokenManagerAddress, true
+    );
+    const dataTxApprove = methodWithArguments_approve.encodeABI();
+    const methodWithArguments_rawExitToMainERC1155 = chainFrom.jo_token_manager_erc1155.methods.exitToMainERC1155Batch(
+        tokenInfoTo.address,
+        accountForMainnet,
+        arrTokenIDs, // prepare_array_for_call1155( arrTokenIDs, chainFrom ),
+        arrTokenAmounts // prepare_array_for_call1155( arrTokenAmounts, chainFrom )
+    );
+    const dataExitToMainERC1155 = methodWithArguments_rawExitToMainERC1155.encodeABI();
+    let gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
+    const estimatedGas_approve = await transactionCustomizer.computeGas( methodWithArguments_approve, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
+    await dry_run_call( chainFrom.w3, methodWithArguments_approve, joAccountFrom, opts.isIgnoreDRC_approve ? true : false, gasPrice, estimatedGas_approve );
+    let tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    const rawTxApprove = {
+        chainId: chainFrom.chainID,
+        from: accountForSchain,
+        nonce: "0x" + tcnt.toString( 16 ),
+        data: dataTxApprove,
+        to: tokenInfoFrom.address,
+        gasPrice: gasPrice,
+        gas: estimatedGas_approve
+    };
+    const txApprove = compose_tx_instance( rawTxApprove );
+    const joApproveSR = await safe_sign_transaction_with_account( chainFrom.w3, txApprove, rawTxApprove, joAccountFrom );
+    let joReceiptApprove = null;
+    if( joApproveSR.joACI.isAutoSend && joDepositBatchSR.joACI.isAutoSend )
+        joReceiptApprove = await get_web3_transactionReceipt( 10, chainFrom.w3, joApproveSR.txHashSent ); // await chainFrom.w3.eth.getTransactionReceipt( joApproveSR.txHashSent );
+    else {
+        const serializedTxApprove = txApprove.serialize();
+        joReceiptApprove = await safe_send_signed_transaction( chainFrom.w3, serializedTxApprove );
+    }
+    if( joReceiptApprove && typeof joReceiptApprove == "object" && "gasUsed" in joReceiptApprove ) {
+        jarrReceipts.push( {
+            "description": "do_batch_erc1155_payment_from_s_chain/approve",
+            "receipt": joReceiptApprove
+        } );
+    }
+    if( g_nSleepBetweenTransactionsOnSChainMilliseconds )
+        await sleep( g_nSleepBetweenTransactionsOnSChainMilliseconds );
+    if( g_bWaitForNextBlockOnSChain )
+        await wait_for_next_block_to_appear( chainFrom.w3 );
+    const estimatedGas_rawExitToMainERC1155 = await transactionCustomizer.computeGas( methodWithArguments_rawExitToMainERC1155, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
+    tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
+    await dry_run_call( chainFrom.w3, methodWithArguments_rawExitToMainERC1155, joAccountFrom, opts.isIgnoreDRC_rawExitToMainERC1155Batch ? true : false, gasPrice, estimatedGas_rawExitToMainERC1155 );
+    const rawTxExitToMainERC1155Batch = {
+        chainId: chainFrom.chainID,
+        from: accountForSchain,
+        nonce: "0x" + tcnt.toString( 16 ),
+        data: dataExitToMainERC1155,
+        to: tokenManagerAddress,
+        gasPrice: gasPrice,
+        gas: estimatedGas_rawExitToMainERC1155
+    };
+    const txExitToMainERC1155Batch = compose_tx_instance( rawTxExitToMainERC1155Batch );
+    const joExitToMainERC1155SR = await safe_sign_transaction_with_account( chainFrom.w3, txExitToMainERC1155Batch, rawTxExitToMainERC1155Batch, joAccountFrom );
+    let withdrawBatchOfERC1155fromSchainBatch = null;
+    if( joExitToMainERC1155SR.joACI.isAutoSend )
+        withdrawBatchOfERC1155fromSchainBatch = await get_web3_transactionReceipt( 10, chainFrom.w3, joExitToMainERC1155SR.txHashSent ); // await chainFrom.w3.eth.getTransactionReceipt( joExitToMainERC1155SR.txHashSent );
+    else {
+        const serializedTxExitToMainERC1155 = txExitToMainERC1155Batch.serialize();
+        withdrawBatchOfERC1155fromSchainBatch = await safe_send_signed_transaction( chainFrom.w3, serializedTxExitToMainERC1155 );
+    }
+    if( withdrawBatchOfERC1155fromSchainBatch && typeof withdrawBatchOfERC1155fromSchainBatch == "object" && "gasUsed" in withdrawBatchOfERC1155fromSchainBatch ) {
+        jarrReceipts.push( {
+            "description": "do_batch_erc1155_payment_from_s_chain/exit-to-main",
+            "receipt": withdrawBatchOfERC1155fromSchainBatch
+        } );
+    }
+    const joReceipt = withdrawBatchOfERC1155fromSchainBatch;
+    // Must-have event(s) analysis as indicator(s) of success
+    if( chainFrom.jo_message_proxy_s_chain ) {
+        await sleep( g_nSleepBeforeFetchOutgoingMessageEvent );
+        const joEvents = await get_contract_call_events( chainFrom.w3, chainFrom.jo_message_proxy_s_chain, "OutgoingMessage", joReceipt.blockNumber, joReceipt.transactionHash, {} );
+        if( joEvents.length <= 0 )
+            throw new Error( "(withdrawBatchOfERC1155fromSchain) Verification failed for the \"OutgoingMessage\" event of the \"MessageProxy\"/" + chainFrom.jo_message_proxy_s_chain.options.address + " contract, no events found" );
+    }
+    // print_gas_usage_report_from_array( "BATCH ERC-1155 PAYMENT FROM S-CHAIN", jarrReceipts );
+}
+
 async function ima_viewETHtoReceive( chain, walletAddress ) {
     if( ! chain.isMainNet() )
         throw new Error( "Can view ETH to receive only on Main NET" );
@@ -1773,6 +2278,9 @@ async function ima_reimbursementSetRange(
 }
 
 const IMA = {
+    validateRadix: validateRadix,
+    validateInteger: validateInteger,
+    toInteger: toInteger,
     toURL: toURL,
     validateURL: validateURL,
     is_http_url: is_http_url,
@@ -1796,24 +2304,33 @@ const IMA = {
     safeURL: safeURL,
     w3provider_2_url: w3provider_2_url,
     w3_2_url: w3_2_url,
-    parseIntSafer: parseIntSafer,
+    parseIntOrHex: parseIntOrHex,
     wait_for_next_block_to_appear: wait_for_next_block_to_appear,
     sleep: sleep,
-    disableAutomaticDeployERC20: ima_disableAutomaticDeployERC20,
-    disableAutomaticDeployERC721: ima_disableAutomaticDeployERC721,
+    enableAutomaticDeployERC20: ima_enableAutomaticDeployERC20,
+    enableAutomaticDeployERC721: ima_enableAutomaticDeployERC721,
+    enableAutomaticDeployERC1155: ima_enableAutomaticDeployERC1155,
     addERC20TokenByOwnerMN: ima_addERC20TokenByOwnerMN,
     addERC721TokenByOwnerMN: ima_addERC721TokenByOwnerMN,
+    addERC1155TokenByOwnerMN: ima_addERC1155TokenByOwnerMN,
     addERC20TokenByOwnerSC: ima_addERC20TokenByOwnerSC,
     addERC721TokenByOwnerSC: ima_addERC721TokenByOwnerSC,
+    addERC1155TokenByOwnerSC: ima_addERC1155TokenByOwnerSC,
     getETHbalance: ima_getETHbalance,
     getERC20balance: ima_getERC20balance,
     getERC721ownerOf: ima_getERC721ownerOf,
+    getERC1155balance: ima_getERC1155balance,
+    getERC1155balanceOfBatch: ima_getERC1155balanceOfBatch,
     depositETHtoSchain: ima_depositETHtoSchain,
     depositERC20toSchain: ima_depositERC20toSchain,
     depositERC721toSchain: ima_depositERC721toSchain,
+    depositERC1155toSchain: ima_depositERC1155toSchain,
+    depositBatchOfERC1155toSchain: ima_depositBatchOfERC1155toSchain,
     withdrawETHfromSchain: ima_withdrawETHfromSchain,
     withdrawERC20fromSchain: ima_withdrawERC20fromSchain,
     withdrawERC721fromSchain: ima_withdrawERC721fromSchain,
+    withdrawERC1155fromSchain: ima_withdrawERC1155fromSchain,
+    withdrawBatchOfERC1155fromSchain: ima_withdrawBatchOfERC1155fromSchain,
     viewETHtoReceive: ima_viewETHtoReceive,
     receiveETH: ima_receiveETH,
     reimbursementGetBalance: ima_reimbursementGetBalance,

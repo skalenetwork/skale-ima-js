@@ -141,10 +141,40 @@
                         </ul>
                     </div>
 
+                    <h1>ERC1155 Transfers</h1>
+                    <div>
+                        <input type="text" class="balance_input" id="idBalanceAmountMN1155"></input> <a href="javascript: show_balance_erc1155_mn();">MN Balance</a>
+                        <br>
+                        <input type="text" class="balance_input" id="idBalanceAmountSC1155"></input> <a href="javascript: show_balance_erc1155_sc();">SC Balance</a>
+                        <br>
+                        <input type="text" class="value_input" id="idValueIdOfERC1155"></input> Token ID
+                        <br>
+                        <input type="text" class="value_input" id="idValueAmountERC1155"></input> Amount
+                        <ul>
+                            <li><a href="javascript: run_m2s_erc1155_direct();">M&ndash;&gt;S transfer using PK</a> or <a href="javascript: run_m2s_erc1155_metamask();">Metamask</a></li>
+                            <li><a href="javascript: run_s2m_erc1155_direct();">S&ndash;&gt;M transfer using PK</a> or <a href="javascript: run_s2m_erc1155_metamask();">Metamask</a></li>
+                        </ul>
+                    </div>
+
+                    <h1>Batch ERC1155 Transfers</h1>
+                    <div>
+                        <input type="text" class="balance_input" id="idBalancesAmountsMN1155"></input> <a href="javascript: show_balance_erc1155_mn();">MN Balances</a>
+                        <br>
+                        <input type="text" class="balance_input" id="idBalancesAmountsSC1155"></input> <a href="javascript: show_balance_erc1155_sc();">SC Balances</a>
+                        <br>
+                        <input type="text" class="value_input" id="idValuesIDsOfERC1155"></input> Token IDs
+                        <br>
+                        <input type="text" class="value_input" id="idValuesAmountsERC1155"></input> Amounts
+                        <ul>
+                            <li><a href="javascript: run_m2s_batch_erc1155_direct();">M&ndash;&gt;S transfer using PK</a> or <a href="javascript: run_m2s_batch_erc1155_metamask();">Metamask</a></li>
+                            <li><a href="javascript: run_s2m_batch_erc1155_direct();">S&ndash;&gt;M transfer using PK</a> or <a href="javascript: run_s2m_batch_erc1155_metamask();">Metamask</a></li>
+                        </ul>
+                    </div>
+
                     <h1>All Transfers Test</h1>
                     <div>
                         <ul>
-                            <li><a href="javascript: run_all();">ETH+ERC20+ERC721, M &lt;&ndash;&gt;S, PK</a></li>
+                            <li><a href="javascript: run_all();">ETH+ERC20+ERC721+ERC1155+BatchERC1155, M &lt;&ndash;&gt;S, PK</a></li>
                         </ul>
                     </div>
                 </td>

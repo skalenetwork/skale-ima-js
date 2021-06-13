@@ -35,6 +35,7 @@ const strLogPrefix = "   >>>>";
 // const Migrations = artifacts.require( "Migrations" );
 const ERC20 = artifacts.require( "ERC20" );
 const ERC721 = artifacts.require( "ERC721" );
+const ERC1155 = artifacts.require( "ERC1155" );
 
 function normalizePath( strPath ) {
     strPath = strPath.replace( /^~/, os.homedir() );
@@ -53,6 +54,7 @@ module.exports = function( deployer, network, accounts ) {
         const name = "SERGE";
         const symbol = "SRG";
         const decimals = 18;
+        const uri1155 = "say something";
         const contractERC20 = await deployer.deploy( ERC20, name, symbol, decimals );
         // console.log( contractERC20 );
         console.log( strLogPrefix, "Contract \"ERC20\" was successfully deployed at address", "\"" + ERC20.address + "\"" );
@@ -60,6 +62,10 @@ module.exports = function( deployer, network, accounts ) {
         const contractERC721 = await deployer.deploy( ERC721, name, symbol );
         console.log( strLogPrefix, "Contract \"ERC721\" was successfully deployed at address", "\"" + ERC721.address + "\"" );
         // console.log( contractERC721 );
+
+        const contractERC1155 = await deployer.deploy( ERC1155, uri1155 );
+        console.log( strLogPrefix, "Contract \"ERC1155\" was successfully deployed at address", "\"" + ERC1155.address + "\"" );
+        // console.log( contractERC1155 );
 
         const strAbiJsonNameSuffixEffective = strAbiJsonNameSuffix || ( "." + network.trim() );
         //
@@ -69,7 +75,9 @@ module.exports = function( deployer, network, accounts ) {
             ERC20_address: ERC20.address,
             ERC20_abi: ERC20.abi,
             ERC721_address: ERC721.address,
-            ERC721_abi: ERC721.abi
+            ERC721_abi: ERC721.abi,
+            ERC1155_address: ERC1155.address,
+            ERC1155_abi: ERC1155.abi,
         };
         let strPathAbiJsonFile = normalizePath( path.join( __dirname, "../data/TestTokens.abi" + strAbiJsonNameSuffixEffective + ".json" ) );
         try {
@@ -109,7 +117,25 @@ module.exports = function( deployer, network, accounts ) {
             console.warn( strLogPrefix, "CRITICAL ERROR: failed to save ABI JSON file \"" + strPathAbiJsonFile + "\", error is:", err );
             process.exit( 13 );
         }
+        //
+        // save standing alone ABI JSON for ERC1155 only
+        //
+        const joAbiOnlyERC1155 = {
+            ERC1155_address: ERC1155.address,
+            ERC1155_abi: ERC1155.abi
+        };
+        strPathAbiJsonFile = normalizePath( path.join( __dirname, "../data/TestToken.ERC1155.abi" + strAbiJsonNameSuffixEffective + ".json" ) );
+        try {
+            fs.writeFileSync( strPathAbiJsonFile, JSON.stringify( joAbiOnlyERC1155 ) + "\n\n" );
+            console.log( strLogPrefix, "Saved ABI JSON file \"" + strPathAbiJsonFile + "\"" );
+        } catch ( err ) {
+            console.warn( strLogPrefix, "CRITICAL ERROR: failed to save ABI JSON file \"" + strPathAbiJsonFile + "\", error is:", err );
+            process.exit( 13 );
+        }
 
+        //
+        // mint required tokens initially, if needed
+        //
         const isSkipMint = ( process.env.IS_SKIP_MINT ) ? true : false;
         if( isSkipMint )
             console.log( strLogPrefix, "Token minting is skipped.\n" );
@@ -129,24 +155,39 @@ module.exports = function( deployer, network, accounts ) {
                 console.log( strLogPrefix, "Minting ERC721 token ID", firstTokenIdERC721 + i, "to", strMintToAddress, "..." );
                 await contractERC721.mint( strMintToAddress, firstTokenIdERC721 + i );
                 console.log( strLogPrefix, "Done." );
+                //
+                console.log( strLogPrefix, "Minting ERC1155 token ID", firstTokenIdERC721 + i, "(amount is" + amountERC20 + ")", "to", strMintToAddress, "..." );
+                await contractERC1155.mint( strMintToAddress, firstTokenIdERC721 + i, amountERC20, [] );
+                console.log( strLogPrefix, "Done." );
             }
         }
 
+        //
+        // register privileged token minters initially, if needed
+        //
         const arrMinters = ( process.env.TOKEN_MINTERS
             && typeof process.env.TOKEN_MINTERS == "string"
             && process.env.TOKEN_MINTERS.length > 0
             )   ? process.env.TOKEN_MINTERS.split( "," )
             : [];
         if( arrMinters.length > 0 ) {
+            console.log( strLogPrefix, "" );
+            console.log( strLogPrefix, "Minters are: " + JSON.stringify( arrMinters ) );
             for( const strMinterAddressWalk of arrMinters ) {
                 const strMinterAddress = strMinterAddressWalk.trim();
                 if( strMinterAddress.length > 0 ) {
                     console.log( strLogPrefix, "" );
-                    console.log( strLogPrefix, "Adding ERC20 token minter", strMinterAddress, "..." );
+                    //
+                    console.log( strLogPrefix, "Adding token minter", strMinterAddress, "to ERC20 contract", ERC20.address, "..." );
                     await contractERC20.privilegedAdd( strMinterAddress );
                     console.log( strLogPrefix, "Done." );
-                    console.log( strLogPrefix, "Adding ERC721 token minter", strMinterAddress, "..." );
+                    //
+                    console.log( strLogPrefix, "Adding token minter", strMinterAddress, "to ERC721 contract", ERC721.address, "..." );
                     await contractERC721.privilegedAdd( strMinterAddress );
+                    console.log( strLogPrefix, "Done." );
+                    //
+                    console.log( strLogPrefix, "Adding token minter", strMinterAddress, "to ERC1155 contract", ERC1155.address, "..." );
+                    await contractERC1155.privilegedAdd( strMinterAddress );
                     console.log( strLogPrefix, "Done." );
                 }
             }

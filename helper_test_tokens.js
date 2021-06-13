@@ -39,10 +39,10 @@ async function deploy_test_tokens_to( opts ) {
         "PRIVATE_KEY_FOR_SCHAIN": "" + opts.strDeployerPrivateKeySC
     };
     if( opts.strTruffleNetworkName == "sc00" ) {
-        joEnv.TOKEN_MINTERS = "" +
-            opts.sc.joABI.token_manager_erc20_address +
-            "," +
-            opts.sc.joABI.token_manager_erc721_address
+        joEnv.TOKEN_MINTERS =
+            "" + opts.sc.joABI.token_manager_erc20_address +
+            "," + opts.sc.joABI.token_manager_erc721_address +
+            "," + opts.sc.joABI.token_manager_erc1155_address
         ;
     }
     await helper_shell.exec_array_of_commands_safe( [
@@ -58,12 +58,14 @@ async function deploy_test_tokens_to( opts ) {
             opts.joABI = helper_utils.jsonFileLoad( path.join( opts.strFolderTestTokensData, "TestTokens.abi.mn.json" ), null );
             opts.contractERC20 = new opts.mn.w3.eth.Contract( opts.joABI.ERC20_abi, opts.joABI.ERC20_address );
             opts.contractERC721 = new opts.mn.w3.eth.Contract( opts.joABI.ERC721_abi, opts.joABI.ERC721_address );
+            opts.contractERC1155 = new opts.mn.w3.eth.Contract( opts.joABI.ERC1155_abi, opts.joABI.ERC1155_address );
         }
     } else if( opts.strTruffleNetworkName == "sc00" ) {
         if( opts.joABI == null ) {
             opts.joABI = helper_utils.jsonFileLoad( path.join( opts.strFolderTestTokensData, "TestTokens.abi.sc00.json" ), null );
             opts.contractERC20 = new opts.sc.w3.eth.Contract( opts.joABI.ERC20_abi, opts.joABI.ERC20_address );
             opts.contractERC721 = new opts.sc.w3.eth.Contract( opts.joABI.ERC721_abi, opts.joABI.ERC721_address );
+            opts.contractERC1155 = new opts.sc.w3.eth.Contract( opts.joABI.ERC1155_abi, opts.joABI.ERC1155_address );
         }
         await opts.IMA.sleep( 5000 );
         const joAccountDeployerMN = {
@@ -72,10 +74,6 @@ async function deploy_test_tokens_to( opts ) {
         const joAccountDeployerSC = {
             privateKey: opts.strDeployerPrivateKeySC
         };
-        // console.log( "Disabling automatic deployment of ERC20 contract on S-Chain for \"" + strSChainName + "\"..." );
-        // await opts.IMA.disableAutomaticDeployERC20( opts.sc, joAccountDeployerSC, opts.sc.chainName );
-        // console.log( "Disabling automatic deployment of ERC721 contract on S-Chain for \"" + strSChainName + "\"..." );
-        // await opts.IMA.disableAutomaticDeployERC721( opts.sc, joAccountDeployerSC, opts.sc.chainName );
         console.log( "Adding/registering ERC20 contract on Main NET for \"" + opts.sc.chainName + "\". Main NET token address " + opts.tokensMN.contractERC20.options.address + "..." );
         await opts.IMA.addERC20TokenByOwnerMN(
             opts.mn,
@@ -89,6 +87,13 @@ async function deploy_test_tokens_to( opts ) {
             joAccountDeployerMN,
             opts.sc.chainName,
             opts.tokensMN.contractERC721.options.address
+        );
+        console.log( "Adding/registering ERC1155 contract on Main NET for \"" + opts.sc.chainName + "\". Main NET token address " + opts.tokensMN.contractERC1155.options.address + "..." );
+        await opts.IMA.addERC1155TokenByOwnerMN(
+            opts.mn,
+            joAccountDeployerMN,
+            opts.sc.chainName,
+            opts.tokensMN.contractERC1155.options.address
         );
         console.log( "Adding/registering ERC20 contract on S-Chain for \"" + opts.mn.chainName + "\". Main NET token address " + opts.tokensMN.contractERC20.options.address + ". S-Chain token address " + opts.contractERC20.options.address + "..." );
         await opts.IMA.addERC20TokenByOwnerSC(
@@ -106,6 +111,14 @@ async function deploy_test_tokens_to( opts ) {
             opts.tokensMN.contractERC721.options.address,
             opts.contractERC721.options.address
         );
+        console.log( "Adding/registering ERC1155 contract on S-Chain for \"" + opts.mn.chainName + "\". Main NET token address " + opts.tokensMN.contractERC1155.options.address + ". S-Chain token address " + opts.contractERC1155.options.address + "..." );
+        await opts.IMA.addERC1155TokenByOwnerSC(
+            opts.sc,
+            joAccountDeployerSC,
+            opts.mn.chainName,
+            opts.tokensMN.contractERC1155.options.address,
+            opts.contractERC1155.options.address
+        );
     }
     console.log( "Successful deployment of \"Test Tokens\" to \"" + opts.strTruffleNetworkName + "\"" );
 }
@@ -118,7 +131,9 @@ function can_load_test_tokens( opts ) {
                 "ERC20_abi" in joABI &&
                 "ERC20_address" in joABI &&
                 "ERC721_abi" in joABI &&
-                "ERC721_address" in joABI
+                "ERC721_address" in joABI &&
+                "ERC1155_abi" in joABI &&
+                "ERC1155_address" in joABI
             )
                 return true;
         } catch ( err ) {
@@ -130,7 +145,9 @@ function can_load_test_tokens( opts ) {
                 "ERC20_abi" in joABI &&
                 "ERC20_address" in joABI &&
                 "ERC721_abi" in joABI &&
-                "ERC721_address" in joABI
+                "ERC721_address" in joABI &&
+                "ERC1155_abi" in joABI &&
+                "ERC1155_address" in joABI
             )
                 return true;
         } catch ( err ) {
@@ -144,10 +161,12 @@ function load_test_tokens( opts ) {
         opts.joABI = helper_utils.jsonFileLoad( path.join( opts.strFolderTestTokensData, "TestTokens.abi.mn.json" ), null );
         opts.contractERC20 = new opts.mn.w3.eth.Contract( opts.joABI.ERC20_abi, opts.joABI.ERC20_address );
         opts.contractERC721 = new opts.mn.w3.eth.Contract( opts.joABI.ERC721_abi, opts.joABI.ERC721_address );
+        opts.contractERC1155 = new opts.mn.w3.eth.Contract( opts.joABI.ERC1155_abi, opts.joABI.ERC1155_address );
     } else if( opts.strTruffleNetworkName == "sc00" ) {
         opts.joABI = helper_utils.jsonFileLoad( path.join( opts.strFolderTestTokensData, "TestTokens.abi.sc00.json" ), null );
         opts.contractERC20 = new opts.sc.w3.eth.Contract( opts.joABI.ERC20_abi, opts.joABI.ERC20_address );
         opts.contractERC721 = new opts.sc.w3.eth.Contract( opts.joABI.ERC721_abi, opts.joABI.ERC721_address );
+        opts.contractERC1155 = new opts.sc.w3.eth.Contract( opts.joABI.ERC1155_abi, opts.joABI.ERC1155_address );
     }
 }
 

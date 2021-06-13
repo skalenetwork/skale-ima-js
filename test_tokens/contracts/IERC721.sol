@@ -27,7 +27,7 @@ pragma solidity ^0.5.0;
 
 import "./IERC165.sol";
 
-// @dev Required interface of an ERC721 compliant contract.
+// Required interface of an ERC721 compliant contract.
 contract IERC721 is IERC165 {
     event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
     event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);

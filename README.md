@@ -4,15 +4,15 @@
 
 ## At a Glance
 
-**IMA.JS** library implements easiest and minimal possible API to transfer **ETH**, **ERC20** and **ERC721** between **Main NET** and **S-Chain**. Additionally, **IMA.JS** provides the following services and utility operations:
+**IMA.JS** library implements easiest and minimal possible API to transfer **ETH**, **ERC20**,  **ERC721** and **ERC1155** between **Main NET** and **S-Chain**. Additionally, **IMA.JS** provides the following services and utility operations:
 
-- Fetch **ETH** and **ERC20** balances, **ERC721** token owners
-- Disable automatic token deployment(instantiation) on **S-Chain**
-- **ERC20** and **ERC721** tokens registration on **Main NET** and **S-Chain** parts of **IMA**.
+- Fetch **ETH** and **ERC20**, **ERC1155** balances, **ERC721** token owners
+- Enable/disable automatic token deployment(instantiation) on **S-Chain**
+- **ERC20**, **ERC721** and **ERC1155** tokens registration on **Main NET** and **S-Chain** parts of **IMA**.
 
 Full set of supported features is demonstrated in pretty short `test.js` sample application.
 
-Sample implementations of **ERC20** and **ERC721** tokens are provided in the `test_tokens` folder.
+Sample implementations of **ERC20**,  **ERC721** and **ERC1155** tokens are provided in the `test_tokens` folder.
 
 **IMA.JS** library provided as is, no build required. Both server side and browser versions are single `ima.js` file.
 
@@ -188,6 +188,37 @@ const erc721tokenOwnerWalletAddress = await IMA.getERC721ownerOf(
     chain, strWalletAddress, strTokenAlias, tokenID );
 ```
 
+### Getting ERC1155 balance
+
+```js
+const erc1155balance = await IMA.getERC1155balance
+    chain, strWalletAddress, { abi: ERC1155_abi_json, address: ERC1155_contract_address } );
+```
+
+or
+
+```js
+const erc1155balance = await IMA.getERC1155balance
+    chain, strWalletAddress, strTokenAlias );
+```
+
+### Getting ERC1155 balance of batch
+
+```js
+const arrErc1155balances = await IMA.getERC1155balanceOfBatch
+    chain,
+    arrWalletAddresses,
+    { abi: ERC1155_abi_json, address: ERC1155_contract_address },
+    arrTokenId1155 );
+```
+
+or
+
+```js
+const arrErc1155balances = await IMA.getERC1155balanceOfBatch
+    chain, arrWalletAddresses, strTokenAlias, arrTokenId1155 );
+```
+
 ## Transfer Operations
 
 ### ETH Transfers
@@ -291,6 +322,80 @@ await IMA.withdrawERC721fromSchain(
     { abi: ERC721_abi_SC_json, address: ERC721_contract_address_SC }, // or token alias on S-Chain
     { abi: ERC721_abi_MN_json, address: ERC721_contract_address_MN }, // or token alias on Main NET
     tokenID,
+    opts );
+```
+
+#### Transferring ERC1155 from Main NET to S-Chain
+
+```js
+const opts = {
+    isIgnoreDRC_approve: false,
+    isIgnoreDRC_rawDepositERC1155: false,
+    transactionCustomizer: null,
+    weiReserve: "100000000000000000" // 100 finney
+};
+await IMA.depositERC1155toSchain(
+    chainMN, chainSC,
+    joAccountMN, joAccountSC,
+    { abi: ERC1155_abi_json, address: ERC1155_contract_address }, // or token alias on S-Chain
+    tokenId,
+    tokenAmount,
+    opts );
+```
+
+#### Transferring ERC1155 from S-Chain to Main NET
+
+```js
+const opts = {
+    isIgnoreDRC_approve: false,
+    isIgnoreDRC_rawExitToMainERC1155: false,
+    transactionCustomizer: null,
+    weiReserve: "100000000000000000" // 100 finney
+};
+await IMA.withdrawERC1155fromSchain(
+    chainSC, chainMN,
+    joAccountSC, joAccountMN,
+    { abi: ERC1155_abi_SC_json, address: ERC1155_contract_address_SC }, // or token alias on S-Chain
+    { abi: ERC1155_abi_MN_json, address: ERC1155_contract_address_MN }, // or token alias on Main NET
+    tokenId,
+    tokenAmount,
+    opts );
+```
+
+#### Transferring batch of ERC1155 from Main NET to S-Chain
+
+```js
+const opts = {
+    isIgnoreDRC_approve: false,
+    Batch: false,
+    transactionCustomizer: null,
+    weiReserve: "100000000000000000" // 100 finney
+};
+await IMA.depositBatchOfERC1155toSchain(
+    chainMN, chainSC,
+    joAccountMN, joAccountSC,
+    { abi: ERC1155_abi_json, address: ERC1155_contract_address }, // or token alias on S-Chain
+    arrTokenIDs,
+    arrTokenAmounts,
+    opts );
+```
+
+#### Transferring batch ERC1155 from S-Chain to Main NET
+
+```js
+const opts = {
+    isIgnoreDRC_approve: false,
+    isIgnoreDRC_rawExitToMainERC1155Batch: false,
+    transactionCustomizer: null,
+    weiReserve: "100000000000000000" // 100 finney
+};
+await IMA.withdrawBatchOfERC1155fromSchain(
+    chainSC, chainMN,
+    joAccountSC, joAccountMN,
+    { abi: ERC1155_abi_SC_json, address: ERC1155_contract_address_SC }, // or token alias on S-Chain
+    { abi: ERC1155_abi_MN_json, address: ERC1155_contract_address_MN }, // or token alias on Main NET
+    arrTokenIDs,
+    arrTokenAmounts,
     opts );
 ```
 
