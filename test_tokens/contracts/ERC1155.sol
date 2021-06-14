@@ -23,7 +23,7 @@
  * @copyright SKALE Labs 2019-Present
  */
 
-pragma solidity ^0.5.0;
+pragma solidity 0.6.12;
 
 import "./IERC1155.sol";
 import "./IERC1155Receiver.sol";
@@ -54,7 +54,7 @@ contract ERC1155 is ERC165, IERC1155, Pausable {
         return _uri;
     }
 
-    function balanceOf(address account, uint256 id) public view returns (uint256) {
+    function balanceOf(address account, uint256 id) public view override returns (uint256) {
         require(account != address(0), "ERC1155: balance query for the zero address");
         return _balances[id][account];
     }
@@ -63,7 +63,7 @@ contract ERC1155 is ERC165, IERC1155, Pausable {
         address[] calldata accounts,
         uint256[] calldata ids
     )
-        external
+        external override
         view
        
        
@@ -77,14 +77,14 @@ contract ERC1155 is ERC165, IERC1155, Pausable {
         return batchBalances;
     }
 
-    function setApprovalForAll(address operator, bool approved) public whenNotPaused {
+    function setApprovalForAll(address operator, bool approved) public override whenNotPaused {
         require(msg.sender != operator, "ERC1155: setting approval status for self");
 
         _operatorApprovals[msg.sender][operator] = approved;
         emit ApprovalForAll(msg.sender, operator, approved);
     }
 
-    function isApprovedForAll(address account, address operator) public view returns (bool) {
+    function isApprovedForAll(address account, address operator) public view override returns (bool) {
         return _operatorApprovals[account][operator];
     }
 
@@ -95,7 +95,7 @@ contract ERC1155 is ERC165, IERC1155, Pausable {
         uint256 amount,
         bytes calldata data
     )
-        external whenNotPaused
+        external override whenNotPaused
        
     {
         require(
@@ -112,7 +112,7 @@ contract ERC1155 is ERC165, IERC1155, Pausable {
         uint256[] calldata amounts,
         bytes calldata data
     )
-        external whenNotPaused
+        external override whenNotPaused
        
     {
         require(
@@ -321,7 +321,7 @@ contract ERC1155 is ERC165, IERC1155, Pausable {
         return array;
     }
 
-    function _isContract(address _addr) private returns (bool isContract) {
+    function _isContract(address _addr) private view returns (bool isContract) {
         uint32 size;
         assembly {
             size := extcodesize(_addr)

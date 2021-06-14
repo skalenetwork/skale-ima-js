@@ -162,11 +162,13 @@ function load_test_tokens( opts ) {
         opts.contractERC20 = new opts.mn.w3.eth.Contract( opts.joABI.ERC20_abi, opts.joABI.ERC20_address );
         opts.contractERC721 = new opts.mn.w3.eth.Contract( opts.joABI.ERC721_abi, opts.joABI.ERC721_address );
         opts.contractERC1155 = new opts.mn.w3.eth.Contract( opts.joABI.ERC1155_abi, opts.joABI.ERC1155_address );
+        opts.contractChatParticipant = new opts.mn.w3.eth.Contract( opts.joABI.ChatParticipant_abi, opts.joABI.ChatParticipant_address );
     } else if( opts.strTruffleNetworkName == "sc00" ) {
         opts.joABI = helper_utils.jsonFileLoad( path.join( opts.strFolderTestTokensData, "TestTokens.abi.sc00.json" ), null );
         opts.contractERC20 = new opts.sc.w3.eth.Contract( opts.joABI.ERC20_abi, opts.joABI.ERC20_address );
         opts.contractERC721 = new opts.sc.w3.eth.Contract( opts.joABI.ERC721_abi, opts.joABI.ERC721_address );
         opts.contractERC1155 = new opts.sc.w3.eth.Contract( opts.joABI.ERC1155_abi, opts.joABI.ERC1155_address );
+        opts.contractChatParticipant = new opts.mn.w3.eth.Contract( opts.joABI.ChatParticipant_abi, opts.joABI.ChatParticipant_address );
     }
 }
 

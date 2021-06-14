@@ -23,7 +23,7 @@
  * @copyright SKALE Labs 2019-Present
  */
 
-pragma solidity ^0.5.0;
+pragma solidity 0.6.12;
 
 interface IERC1155 {
     event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);

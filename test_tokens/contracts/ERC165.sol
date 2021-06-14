@@ -23,7 +23,7 @@
  * @copyright SKALE Labs 2019-Present
  */
 
-pragma solidity ^0.5.0;
+pragma solidity 0.6.12;
 
 import "./IERC165.sol";
 
@@ -45,7 +45,7 @@ contract ERC165 is IERC165 {
 
     // See "IERC165.supportsInterface".
     // Time complexity O(1), guaranteed to always use less than 30 000 gas.
-    function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+    function supportsInterface(bytes4 interfaceId) external override view returns (bool) {
         return _supportedInterfaces[interfaceId];
     }
 

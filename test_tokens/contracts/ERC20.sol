@@ -23,7 +23,7 @@
  * @copyright SKALE Labs 2019-Present
  */
 
-pragma solidity ^0.5.0;
+pragma solidity 0.6.12;
 
 import "./IERC20.sol";
 import "./Pausable.sol";
@@ -37,12 +37,12 @@ contract ERC20 is IERC20, Pausable {
     uint256 private _totalSupply;
 
     // See "IERC20.totalSupply"
-    function totalSupply() public view returns ( uint256 ) {
+    function totalSupply() public view override returns ( uint256 ) {
         return _totalSupply;
     }
 
     // See "IERC20.balanceOf".
-    function balanceOf(address account) public view returns ( uint256 ) {
+    function balanceOf(address account) public view override returns ( uint256 ) {
         return _balances[account];
     }
 
@@ -50,20 +50,20 @@ contract ERC20 is IERC20, Pausable {
     // Requirements:
     // - "recipient" cannot be the zero address.
     // - the caller must have a balance of at least "amount".
-    function transfer(address recipient, uint256 amount) public whenNotPaused returns ( bool ) {
+    function transfer(address recipient, uint256 amount) public override whenNotPaused returns ( bool ) {
         _transfer(msg.sender, recipient, amount);
         return true;
     }
 
     // See "IERC20.allowance".
-    function allowance(address owner, address spender) public view returns ( uint256 ) {
+    function allowance(address owner, address spender) public override view returns ( uint256 ) {
         return _allowances[owner][spender];
     }
 
     // See "IERC20.approve".
     // Requirements:
     // - "spender" cannot be the zero address.
-    function approve(address spender, uint256 value) public whenNotPaused returns ( bool ) {
+    function approve(address spender, uint256 value) public override whenNotPaused returns ( bool ) {
         _approve(msg.sender, spender, value);
         return true;
     }
@@ -76,7 +76,7 @@ contract ERC20 is IERC20, Pausable {
     // - "sender" must have a balance of at least "value".
     // - the caller must have allowance for "sender"'s tokens of at least
     // "amount".
-    function transferFrom(address sender, address recipient, uint256 amount) public whenNotPaused returns ( bool ) {
+    function transferFrom(address sender, address recipient, uint256 amount) public override whenNotPaused returns ( bool ) {
         _transfer(sender, recipient, amount);
         _approve(sender, msg.sender, _allowances[sender][msg.sender].sub(amount));
         return true;

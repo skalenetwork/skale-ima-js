@@ -36,6 +36,7 @@ const strLogPrefix = "   >>>>";
 const ERC20 = artifacts.require( "ERC20" );
 const ERC721 = artifacts.require( "ERC721" );
 const ERC1155 = artifacts.require( "ERC1155" );
+const ChatParticipant = artifacts.require( "ChatParticipant" );
 
 function normalizePath( strPath ) {
     strPath = strPath.replace( /^~/, os.homedir() );
@@ -67,6 +68,10 @@ module.exports = function( deployer, network, accounts ) {
         console.log( strLogPrefix, "Contract \"ERC1155\" was successfully deployed at address", "\"" + ERC1155.address + "\"" );
         // console.log( contractERC1155 );
 
+        const contractChatParticipant = await deployer.deploy( ChatParticipant
+            // , "", "0x0", "0x0"
+            );
+
         const strAbiJsonNameSuffixEffective = strAbiJsonNameSuffix || ( "." + network.trim() );
         //
         // save summary ABI JSON
@@ -78,6 +83,8 @@ module.exports = function( deployer, network, accounts ) {
             ERC721_abi: ERC721.abi,
             ERC1155_address: ERC1155.address,
             ERC1155_abi: ERC1155.abi,
+            ChatParticipant_address: ChatParticipant.address,
+            ChatParticipant_abi: ChatParticipant.abi,
         };
         let strPathAbiJsonFile = normalizePath( path.join( __dirname, "../data/TestTokens.abi" + strAbiJsonNameSuffixEffective + ".json" ) );
         try {
@@ -127,6 +134,21 @@ module.exports = function( deployer, network, accounts ) {
         strPathAbiJsonFile = normalizePath( path.join( __dirname, "../data/TestToken.ERC1155.abi" + strAbiJsonNameSuffixEffective + ".json" ) );
         try {
             fs.writeFileSync( strPathAbiJsonFile, JSON.stringify( joAbiOnlyERC1155 ) + "\n\n" );
+            console.log( strLogPrefix, "Saved ABI JSON file \"" + strPathAbiJsonFile + "\"" );
+        } catch ( err ) {
+            console.warn( strLogPrefix, "CRITICAL ERROR: failed to save ABI JSON file \"" + strPathAbiJsonFile + "\", error is:", err );
+            process.exit( 13 );
+        }
+        //
+        // save standing alone ABI JSON for ChatParticipant only
+        //
+        const joAbiOnlyChatParticipant = {
+            ChatParticipant_address: ChatParticipant.address,
+            ChatParticipant_abi: ChatParticipant.abi
+        };
+        strPathAbiJsonFile = normalizePath( path.join( __dirname, "../data/TestToken.ChatParticipant.abi" + strAbiJsonNameSuffixEffective + ".json" ) );
+        try {
+            fs.writeFileSync( strPathAbiJsonFile, JSON.stringify( joAbiOnlyChatParticipant ) + "\n\n" );
             console.log( strLogPrefix, "Saved ABI JSON file \"" + strPathAbiJsonFile + "\"" );
         } catch ( err ) {
             console.warn( strLogPrefix, "CRITICAL ERROR: failed to save ABI JSON file \"" + strPathAbiJsonFile + "\", error is:", err );

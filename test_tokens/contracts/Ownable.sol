@@ -23,7 +23,7 @@
  * @copyright SKALE Labs 2019-Present
  */
 
-pragma solidity ^0.5.0;
+pragma solidity 0.6.12;
 
 contract Ownable {
     address payable private ownerAddress;
@@ -64,7 +64,7 @@ contract Ownable {
             return;
         if( nPos < (arrPrivileged.length - 1) )
             arrPrivileged[nPos] = arrPrivileged[arrPrivileged.length - 1];
-        arrPrivileged.length --;
+        arrPrivileged.pop();
     }
     function isPrivileged(address a) public view returns ( bool ) {
         if( a == ownerAddress )

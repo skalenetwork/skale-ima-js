@@ -551,14 +551,14 @@ async function get_web3_blockNumber( attempts, w3 ) {
     let nLatestBlockNumber = "";
     try {
         nLatestBlockNumber = await w3.eth.getBlockNumber();
-    } catch ( e ) {}
+    } catch ( err ) {}
     let attemptIndex = 2;
     while( nLatestBlockNumber === "" && attemptIndex <= allAttempts ) {
         // console.log( "Repeat getBlockNumber, attempt" + attemptIndex + ", previous result is: " + nLatestBlockNumber );
         await sleep( 10000 );
         try {
             nLatestBlockNumber = await w3.eth.getBlockNumber();
-        } catch ( e ) {}
+        } catch ( err ) {}
         attemptIndex++;
     }
     if( attemptIndex + 1 > allAttempts && nLatestBlockNumber === "" )
@@ -577,7 +577,7 @@ async function get_web3_pastEvents( attempts, joContract, strEventName, nBlockFr
             fromBlock: nBlockFrom,
             toBlock: nBlockTo
         } );
-    } catch ( e ) {}
+    } catch ( err ) {}
     let attemptIndex = 2;
     while( joAllEventsInBlock === "" && attemptIndex <= allAttempts ) {
         // console.log( "Repeat getPastEvents/" + strEventName + ", attempt " + attemptIndex + ", previous result is: "  + joAllEventsInBlock );
@@ -588,7 +588,7 @@ async function get_web3_pastEvents( attempts, joContract, strEventName, nBlockFr
                 fromBlock: nBlockFrom,
                 toBlock: nBlockTo
             } );
-        } catch ( e ) {}
+        } catch ( err ) {}
         attemptIndex++;
     }
     if( attemptIndex + 1 === allAttempts && joAllEventsInBlock === "" )
@@ -603,14 +603,14 @@ async function get_web3_transactionCount( attempts, w3, address, param ) {
     let txc = "";
     try {
         txc = await w3.eth.getTransactionCount( address, param );
-    } catch ( e ) {}
+    } catch ( err ) {}
     let attemptIndex = 2;
     while( txc === "" && attemptIndex <= allAttempts ) {
         // console.log( "Repeat getTransactionCount, attempt " + attemptIndex + ", previous result is: " + txc );
         await sleep( 10000 );
         try {
             txc = await w3.eth.getBlockNumber();
-        } catch ( e ) {}
+        } catch ( err ) {}
         attemptIndex++;
     }
     if( attemptIndex + 1 > allAttempts && txc === "" )
@@ -625,14 +625,14 @@ async function get_web3_transactionReceipt( attempts, w3, txHash ) {
     let txReceipt = "";
     try {
         txReceipt = await w3.eth.getTransactionReceipt( txHash );
-    } catch ( e ) {}
+    } catch ( err ) {}
     let attemptIndex = 2;
     while( txReceipt === "" && attemptIndex <= allAttempts ) {
         // console.log( "Repeat getTransactionReceipt, attempt " + attemptIndex + ", previous result is: " + JSON.stringify( txReceipt ) );
         await sleep( 10000 );
         try {
             txReceipt = await w3.eth.getTransactionReceipt( txHash );
-        } catch ( e ) {}
+        } catch ( err ) {}
         attemptIndex++;
     }
     if( attemptIndex + 1 > allAttempts && txReceipt === "" )
@@ -2277,6 +2277,50 @@ async function ima_reimbursementSetRange(
     return true;
 }
 
+async function ima_execute_send_on_method_with_arguments( chain, joAccount, methodWithArguments, contractAddress, gasPrice, gasLimit, cntAttempts, nSleepTimeBetweenAttempts, isLog, isErr ) {
+    cntAttempts = cntAttempts || 10;
+    nSleepTimeBetweenAttempts = nSleepTimeBetweenAttempts || 1000;
+    if( isLog === null || isLog === undefined )
+        isLog = false;
+    if( isErr === null || isErr === undefined )
+        isErr = true;
+    for( let idxAttempt = 0; idxAttempt < cntAttempts; ++ idxAttempt ) {
+        try {
+            const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
+            const strAddressFrom = get_account_wallet_address( chain.w3, joAccount );
+            const tcnt = await get_web3_transactionCount( 10, chain.w3, strAddressFrom, null );
+            const rawTx = {
+                chainId: chain.chainID,
+                nonce: tcnt,
+                gasPrice: gasPrice || 10000000000,
+                gasLimit: gasLimit || 8000000,
+                to: contractAddress,
+                data: dataTx
+            };
+            const tx = compose_tx_instance( rawTx );
+            if( isLog )
+                console.log( "    TX is", JSON.stringify( tx ) );
+            const joSR = await safe_sign_transaction_with_account( chain.w3, tx, rawTx, joAccount );
+            let joReceipt = null;
+            if( joSR.joACI.isAutoSend )
+                joReceipt = await get_web3_transactionReceipt( 10, sc.w3, joSR.txHashSent );
+            else {
+                const serializedTx = tx.serialize();
+                joReceipt = await safe_send_signed_transaction( chain.w3, serializedTx );
+            }
+            if( isLog )
+                console.log( "    Receipt is", JSON.stringify( joReceipt ) );
+            return joReceipt;
+        } catch ( err ) {
+            if( isErr )
+                console.log( "FAILED execution attempt " + ( idxAttempt + 1 ) + "/" + cntAttempts + ": " + err.toString() );
+        }
+        if( idxAttempt < ( cntAttempts - 1 ) )
+            await sleep( nSleepTimeBetweenAttempts );
+    }
+    return null;
+}
+
 const IMA = {
     validateRadix: validateRadix,
     validateInteger: validateInteger,
@@ -2336,7 +2380,8 @@ const IMA = {
     reimbursementGetBalance: ima_reimbursementGetBalance,
     reimbursementWalletRecharge: ima_reimbursementWalletRecharge,
     reimbursementWalletWithdraw: ima_reimbursementWalletWithdraw,
-    reimbursementSetRange: ima_reimbursementSetRange
+    reimbursementSetRange: ima_reimbursementSetRange,
+    execute_send_on_method_with_arguments: ima_execute_send_on_method_with_arguments
 };
 
 if( typeof module != "undefined" && "exports" in module )

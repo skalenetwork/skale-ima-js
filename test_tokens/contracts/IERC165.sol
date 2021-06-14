@@ -23,7 +23,7 @@
  * @copyright SKALE Labs 2019-Present
  */
 
-pragma solidity ^0.5.0;
+pragma solidity 0.6.12;
 
 // Interface of the ERC165 standard, as defined in the
 // [EIP](https://eips.ethereum.org/EIPS/eip-165).
