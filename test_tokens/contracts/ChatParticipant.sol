@@ -26,24 +26,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-// import "./interfaces/IMessageProxy.sol";
+import "./interfaces/IMessageProxy.sol";
 import "./interfaces/IMessageReceiver.sol";
-
-interface IMessageProxyMN {
-    function postOutgoingMessage(
-        bytes32 targetChainHash,
-        address targetContract,
-        bytes calldata data
-    ) external;
-}
-
-interface IMessageProxySC {
-    function postOutgoingMessage(
-        string calldata targetSchainName,
-        address targetContract,
-        bytes calldata data
-    ) external;
-}
 
 contract ChatParticipant is IMessageReceiver {
 
@@ -88,22 +72,13 @@ contract ChatParticipant is IMessageReceiver {
         )
         external
     {
-        if( isMainNet() ) {
-            bytes32 destinationChainHash = keccak256( abi.encodePacked( destinationChainName ) );
-            IMessageProxyMN messageProxyMN = IMessageProxyMN( messageProxy_ );
-            messageProxyMN.postOutgoingMessage(
-                destinationChainHash,
-                otherParticipant_,
-                encodeMessage( nickname, text )
-                );
-        } else {
-            IMessageProxySC messageProxySC = IMessageProxySC( messageProxy_ );
-            messageProxySC.postOutgoingMessage(
-                destinationChainName,
-                otherParticipant_,
-                encodeMessage( nickname, text )
-                );
-        }
+        bytes32 destinationChainHash = keccak256( abi.encodePacked( destinationChainName ) );
+        IMessageProxy messageProxy = IMessageProxy( messageProxy_ );
+        messageProxy.postOutgoingMessage(
+            destinationChainHash,
+            otherParticipant_,
+            encodeMessage( nickname, text )
+            );
     }
 
     //
@@ -210,11 +185,11 @@ contract ChatParticipant is IMessageReceiver {
         return getReceivedMessageAt( getReceivedMessageCount() - 1 );
     }
 
-    function isMainNet()
-        public view
-        returns ( bool )
-    {
-        return ( keccak256( abi.encodePacked( thisChainName_ ) ) == keccak256( abi.encodePacked( "Mainnet" ) ) ) ? true : false;
-    }
+    // function isMainNet()
+    //     public view
+    //     returns ( bool )
+    // {
+    //     return ( keccak256( abi.encodePacked( thisChainName_ ) ) == keccak256( abi.encodePacked( "Mainnet" ) ) ) ? true : false;
+    // }
 
 }
