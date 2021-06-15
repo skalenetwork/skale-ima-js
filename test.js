@@ -306,7 +306,7 @@ async function run() {
 
     const tokenId1155 = 1;
     const tokenAmount1155 = 1000;
-    /** /
+    /**/
     await IMA.sleep( 20000 );
     console.log( "Main NET ERC1155 balance of token " + tokenId1155 + " for", addr_mn, "is", await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenId1155 ) );
     console.log( "S-CHain  ERC1155 balance of token " + tokenId1155 + " for", addr_sc, "is", await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenId1155 ) );
