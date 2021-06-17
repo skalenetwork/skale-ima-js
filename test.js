@@ -138,6 +138,7 @@ async function run() {
     await IMA.depositETHtoSchain( mn, sc, joAccountMN, joAccountSC, weiAmount, opts );
     console.log( "Main NET real ETH balance for", addr_mn, "is", await IMA.getETHbalance( mn, addr_mn ) );
     console.log( "S-CHain  real ETH balance for", addr_sc, "is", await IMA.getETHbalance( sc, addr_sc ) );
+    await IMA.sleep( 20000 );
 
     /**/
     console.log( "S2M ETH transfer of wei amount " + weiAmount + "..." );
