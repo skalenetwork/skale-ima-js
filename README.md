@@ -259,8 +259,7 @@ await IMA.withdrawETHfromSchain(
 const opts = {
     isIgnoreDRC_approve: false,
     isIgnoreDRC_rawDepositERC20: false,
-    transactionCustomizer: null,
-    weiReserve: "100000000000000000" // 100 finney
+    transactionCustomizer: null
 };
 await IMA.depositERC20toSchain(
     chainMN, chainSC,
@@ -276,8 +275,7 @@ await IMA.depositERC20toSchain(
 const opts = {
     isIgnoreDRC_approve: false,
     isIgnoreDRC_rawExitToMainERC20: false,
-    transactionCustomizer: null,
-    weiReserve: "100000000000000000" // 100 finney
+    transactionCustomizer: null
 };
 await IMA.withdrawERC20fromSchain(
     chainSC, chainMN,
@@ -296,8 +294,7 @@ await IMA.withdrawERC20fromSchain(
 const opts = {
     isIgnoreDRC_approve: false,
     isIgnoreDRC_rawDepositERC721: false,
-    transactionCustomizer: null,
-    weiReserve: "100000000000000000" // 100 finney
+    transactionCustomizer: null
 };
 await IMA.depositERC721toSchain(
     chainMN, chainSC,
@@ -313,8 +310,7 @@ await IMA.depositERC721toSchain(
 const opts = {
     isIgnoreDRC_transferFrom: false,
     isIgnoreDRC_rawExitToMainERC721: false,
-    transactionCustomizer: null,
-    weiReserve: "100000000000000000" // 100 finney
+    transactionCustomizer: null
 };
 await IMA.withdrawERC721fromSchain(
     chainSC, chainMN,
@@ -331,8 +327,7 @@ await IMA.withdrawERC721fromSchain(
 const opts = {
     isIgnoreDRC_approve: false,
     isIgnoreDRC_rawDepositERC1155: false,
-    transactionCustomizer: null,
-    weiReserve: "100000000000000000" // 100 finney
+    transactionCustomizer: null
 };
 await IMA.depositERC1155toSchain(
     chainMN, chainSC,
@@ -349,8 +344,7 @@ await IMA.depositERC1155toSchain(
 const opts = {
     isIgnoreDRC_approve: false,
     isIgnoreDRC_rawExitToMainERC1155: false,
-    transactionCustomizer: null,
-    weiReserve: "100000000000000000" // 100 finney
+    transactionCustomizer: null
 };
 await IMA.withdrawERC1155fromSchain(
     chainSC, chainMN,
@@ -368,8 +362,7 @@ await IMA.withdrawERC1155fromSchain(
 const opts = {
     isIgnoreDRC_approve: false,
     Batch: false,
-    transactionCustomizer: null,
-    weiReserve: "100000000000000000" // 100 finney
+    transactionCustomizer: null
 };
 await IMA.depositBatchOfERC1155toSchain(
     chainMN, chainSC,
@@ -386,8 +379,7 @@ await IMA.depositBatchOfERC1155toSchain(
 const opts = {
     isIgnoreDRC_approve: false,
     isIgnoreDRC_rawExitToMainERC1155Batch: false,
-    transactionCustomizer: null,
-    weiReserve: "100000000000000000" // 100 finney
+    transactionCustomizer: null
 };
 await IMA.withdrawBatchOfERC1155fromSchain(
     chainSC, chainMN,

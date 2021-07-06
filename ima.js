@@ -1358,7 +1358,7 @@ async function ima_depositERC20toSchain( chainFrom, chainTo, joAccountFrom, joAc
         to: depositBoxAddress,
         gasPrice: gasPrice, // 0
         gas: estimatedGas_deposit //,
-        //value: "0x" + chainFrom.w3.utils.toBN( opts.weiReserve ).toString( 16 )
+        // value: "0x" + chainFrom.w3.utils.toBN( opts.weiReserve ).toString( 16 )
     };
     const txDeposit = compose_tx_instance( rawTxDeposit );
     const joDepositSR = await safe_sign_transaction_with_account( chainFrom.w3, txDeposit, rawTxDeposit, joAccountFrom );
@@ -1735,7 +1735,7 @@ async function ima_depositERC1155toSchain( chainFrom, chainTo, joAccountFrom, jo
         to: depositBoxAddress,
         gasPrice: gasPrice, // 0
         gas: estimatedGas_deposit //,
-        //value: "0x" + chainFrom.w3.utils.toBN( opts.weiReserve ).toString( 16 )
+        // value: "0x" + chainFrom.w3.utils.toBN( opts.weiReserve ).toString( 16 )
     };
     const txDeposit = compose_tx_instance( rawTxDeposit );
     const joDepositSR = await safe_sign_transaction_with_account( chainFrom.w3, txDeposit, rawTxDeposit, joAccountFrom );
@@ -1934,7 +1934,7 @@ async function ima_depositBatchOfERC1155toSchain( chainFrom, chainTo, joAccountF
         to: depositBoxAddress,
         gasPrice: gasPrice, // 0
         gas: estimatedGas_deposit //,
-        //value: "0x" + chainFrom.w3.utils.toBN( opts.weiReserve ).toString( 16 )
+        // value: "0x" + chainFrom.w3.utils.toBN( opts.weiReserve ).toString( 16 )
     };
     const txDepositBatch = compose_tx_instance( rawTxDepositBatch );
     const joDepositBatchSR = await safe_sign_transaction_with_account( chainFrom.w3, txDepositBatch, rawTxDepositBatch, joAccountFrom );

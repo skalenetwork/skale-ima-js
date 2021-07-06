@@ -532,9 +532,7 @@ async function load_tokens() {
         await async_load_test_tokens( tokensSC );
         // write_log( JSON.stringify( tokensSC.joABI ) );
         write_log( "SC tokens loaded." );
-        // Add opts for token transfers
-        opts.weiReserve =
-            "100000000000000000"; // 100 finney, 1 finney is 1000000000000000 // for ERC20 and ERC721 M<->S
+        // opts.weiReserve = "100000000000000000"; // 100 finney, 1 finney is 1000000000000000
         //
         //
         tokenInfoERC20MN = { abi: tokensMN.joABI.ERC20_abi, address: tokensMN.joABI.ERC20_address };

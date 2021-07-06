@@ -116,6 +116,7 @@ async function run() {
     //
     // Reimbursement
     //
+    /**/
     console.log( "Reimbursement ETH balance for", addr_mn, " on chain \"" + chain_name_sc + "\" is", await IMA.reimbursementGetBalance( mn, addr_mn, chain_name_sc ) );
     const weiAmountRecharge = "2000000000000000000";
     const weiAmountWithdraw = "1000000000000000000";
@@ -125,35 +126,59 @@ async function run() {
     console.log( "Reimbursement withdrawing wei amount " + weiAmountWithdraw + "..." );
     await IMA.reimbursementWalletWithdraw( mn, joAccountMN, chain_name_sc, weiAmountWithdraw, opts );
     console.log( "Reimbursement ETH balance for", addr_mn, " on chain \"" + chain_name_sc + "\" is", await IMA.reimbursementGetBalance( mn, addr_mn, chain_name_sc ) );
-
-    const weiAmount = "1000000000000000000";
+    /**/
 
     //
     // ETH
     //
     /**/
-    console.log( "Main NET real ETH balance for", addr_mn, "is", await IMA.getETHbalance( mn, addr_mn ) );
-    console.log( "S-CHain  real ETH balance for", addr_sc, "is", await IMA.getETHbalance( sc, addr_sc ) );
+    const weiAmount = "1000000000000000000";
+    let ethBalanceMN = 0, ethBalanceSC = 0;
+    const show_eth_balances = async function() {
+        ethBalanceMN = await IMA.getETHbalance( mn, addr_mn );
+        ethBalanceSC = await IMA.getETHbalance( sc, addr_sc );
+        console.log( "Main NET real ETH balance for", addr_mn, "is", ethBalanceMN );
+        console.log( "S-CHain  real ETH balance for", addr_sc, "is", ethBalanceSC );
+    };
+    const wait_for_eth_balance_changed = async function( chain, addr, oldBalance ) {
+        console.log( "Waiting for ETH balance changed for", addr, "on chain", chain.chainName, "..." );
+        for( ; true; ) {
+            const newBalance = await IMA.getETHbalance( chain, addr );
+            if( newBalance != oldBalance )
+                break;
+            await IMA.sleep( 1000 );
+        }
+    };
+    await show_eth_balances();
     console.log( "M2S ETH transfer of wei amount " + weiAmount + "..." );
     await IMA.depositETHtoSchain( mn, sc, joAccountMN, joAccountSC, weiAmount, opts );
-    console.log( "Main NET real ETH balance for", addr_mn, "is", await IMA.getETHbalance( mn, addr_mn ) );
-    console.log( "S-CHain  real ETH balance for", addr_sc, "is", await IMA.getETHbalance( sc, addr_sc ) );
-    await IMA.sleep( 20000 );
+    await wait_for_eth_balance_changed( sc, addr_sc, ethBalanceSC );
+    await show_eth_balances();
 
-    /**/
+    let ethCanReceiveMN = 0;
+    const show_eth_can_receive_mn = async function() {
+        ethCanReceiveMN = await IMA.viewETHtoReceive( mn, addr_mn );
+        console.log( "Can receive on Main NET for", addr_sc, "is", ethCanReceiveMN );
+    };
+    const wait_eth_can_receive_mn_changed = async function() {
+        console.log( "Waiting for MN/ETH to receive changed..." );
+        for( ; true; ) {
+            const ethCanReceiveMN_new = await IMA.viewETHtoReceive( mn, addr_mn );
+            if( ethCanReceiveMN_new.toString() != ethCanReceiveMN.toString() )
+                break;
+            await IMA.sleep( 1000 );
+        }
+    };
+    await show_eth_can_receive_mn();
     console.log( "S2M ETH transfer of wei amount " + weiAmount + "..." );
     await IMA.withdrawETHfromSchain( sc, mn, joAccountSC, joAccountMN, weiAmount, opts );
-    console.log( "Main NET real ETH balance for", addr_mn, "is", await IMA.getETHbalance( mn, addr_mn ) );
-    console.log( "S-CHain  real ETH balance for", addr_sc, "is", await IMA.getETHbalance( sc, addr_sc ) );
-
-    await IMA.sleep( 20000 );
-    console.log( "Can receive on Main NET for", addr_sc, "is", await IMA.viewETHtoReceive( mn, addr_mn ) );
+    await wait_eth_can_receive_mn_changed();
+    await show_eth_can_receive_mn();
     await IMA.receiveETH( mn, joAccountMN, opts );
-    console.log( "Can receive on Main NET for", addr_sc, "is", await IMA.viewETHtoReceive( mn, addr_mn ) );
-    console.log( "Main NET real ETH balance for", addr_mn, "is", await IMA.getETHbalance( mn, addr_mn ) );
-    console.log( "S-CHain  real ETH balance for", addr_sc, "is", await IMA.getETHbalance( sc, addr_sc ) );
+    await wait_for_eth_balance_changed( mn, addr_mn, ethBalanceMN );
+    await show_eth_can_receive_mn();
+    await show_eth_balances();
     /**/
-    // process.exit( 0 );
 
     //
     // Test Tokens
@@ -218,8 +243,7 @@ async function run() {
     // Add opts for token transfers
     //
 
-    opts.weiReserve = "100000000000000000"; // 100 finney, 1 finney is 1000000000000000 // for ERC20 and ERC721 M<->S
-
+    // opts.weiReserve = "100000000000000000";
     const tokenInfoERC20MN = { abi: tokensMN.joABI.ERC20_abi, address: tokensMN.joABI.ERC20_address };
     const tokenInfoERC20SC = { abi: tokensSC.joABI.ERC20_abi, address: tokensSC.joABI.ERC20_address };
     const tokenInfoERC721MN = { abi: tokensMN.joABI.ERC721_abi, address: tokensMN.joABI.ERC721_address };
@@ -262,70 +286,104 @@ async function run() {
     // ERC20
     //
 
-    const tokenAmount = 1000;
     /**/
-    await IMA.sleep( 20000 );
-    console.log( "Initial ERC20 balances are:" );
-    console.log( "Main NET ERC20 balance for", addr_mn, "is", await IMA.getERC20balance( mn, addr_mn, tokenERC20MN ) );
-    console.log( "S-CHain  ERC20 balance for", addr_sc, "is", await IMA.getERC20balance( sc, addr_sc, tokenERC20SC ) );
-
+    let erc20balanceMN = 0, erc20balanceSC = 0;
+    const show_erc20_balances = async function() {
+        erc20balanceMN = await IMA.getERC20balance( mn, addr_mn, tokenERC20MN );
+        erc20balanceSC = await IMA.getERC20balance( sc, addr_sc, tokenERC20SC );
+        console.log( "Main NET ERC20 balance for", addr_mn, "is", erc20balanceMN );
+        console.log( "S-CHain  ERC20 balance for", addr_sc, "is", erc20balanceSC );
+    };
+    const wait_erc20_balance_changed = async function( chain, addr, tokenERC20, oldBalance ) {
+        console.log( "Waiting for ERC20 balance changed for", addr, "on chain", chain.chainName, "..." );
+        for( ; true; ) {
+            const newBalance = await IMA.getERC20balance( chain, addr, tokenERC20 );
+            if( newBalance.toString() != oldBalance.toString() )
+                break;
+            await IMA.sleep( 1000 );
+        }
+    };
+    const tokenAmount = 1000;
+    await show_erc20_balances();
     console.log( "M2S ERC20 transfer of token amount " + tokenAmount + "..." );
     await IMA.depositERC20toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC20MN, tokenAmount, opts );
-    console.log( "Main NET ERC20 balance for", addr_mn, "is", await IMA.getERC20balance( mn, addr_mn, tokenERC20MN ) );
-    console.log( "S-CHain  ERC20 balance for", addr_sc, "is", await IMA.getERC20balance( sc, addr_sc, tokenERC20SC ) );
-
-    await IMA.sleep( 20000 );
+    await wait_erc20_balance_changed( sc, addr_sc, tokenERC20SC, erc20balanceSC );
+    await show_erc20_balances();
     console.log( "S2M ERC20 transfer of token amount " + tokenAmount + "..." );
     await IMA.withdrawERC20fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC20SC, tokenERC20MN, tokenAmount, opts );
-    console.log( "Main NET ERC20 balance for", addr_mn, "is", await IMA.getERC20balance( mn, addr_mn, tokenERC20MN ) );
-    console.log( "S-CHain  ERC20 balance for", addr_sc, "is", await IMA.getERC20balance( sc, addr_sc, tokenERC20SC ) );
+    await wait_erc20_balance_changed( mn, addr_mn, tokenERC20MN, erc20balanceMN );
+    await show_erc20_balances();
     /**/
     //
     // ERC721
     //
 
-    const tokenID = 1;
     /**/
-    await IMA.sleep( 20000 );
-    console.log( "ERC721 token ID " + tokenID + " owner on MN is " + await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID ) );
-    console.log( "ERC721 token ID " + tokenID + " owner on SC is " + await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID ) );
-
+    const tokenID = 1;
+    let erc721ownerMN = null, erc721ownerSC = null;
+    const show_erc721_owners = async function() {
+        erc721ownerMN = await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID );
+        erc721ownerSC = await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID );
+        console.log( "ERC721 token ID " + tokenID + " owner on MN is " + erc721ownerMN );
+        console.log( "ERC721 token ID " + tokenID + " owner on SC is " + erc721ownerSC );
+    };
+    const wait_erc721_owner_changed = async function( chain, addr, tokenERC721, oldOwner ) {
+        console.log( "Waiting for ERC721 owner changed on chain", chain.chainName, "..." );
+        for( ; true; ) {
+            const newOwner = await IMA.getERC721ownerOf( chain, addr, tokenERC721, tokenID );
+            if( newOwner.toString() != oldOwner.toString() )
+                break;
+            await IMA.sleep( 1000 );
+        }
+    };
+    await show_erc721_owners();
     console.log( "M2S ERC721 transfer of token ID " + tokenID + "..." );
     await IMA.depositERC721toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC721MN, tokenID, opts );
-    console.log( "ERC721 token ID " + tokenID + " owner on MN is " + await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID ) );
-    console.log( "ERC721 token ID " + tokenID + " owner on SC is " + await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID ) );
-
-    await IMA.sleep( 20000 );
+    await wait_erc721_owner_changed( sc, addr_sc, tokenERC721SC, erc721ownerSC );
+    await show_erc721_owners();
     console.log( "S2M ERC721 transfer of token ID " + tokenID + "..." );
     await IMA.withdrawERC721fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC721SC, tokenERC721MN, tokenID, opts );
-    console.log( "ERC721 token ID " + tokenID + " owner on MN is " + await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID ) );
-    console.log( "ERC721 token ID " + tokenID + " owner on SC is " + await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID ) );
+    await wait_erc721_owner_changed( mn, addr_mn, tokenERC721MN, erc721ownerMN );
+    await show_erc721_owners();
     /**/
     //
     // ERC1155
     //
 
-    const tokenId1155 = 1;
-    const tokenAmount1155 = 1000;
     /**/
-    await IMA.sleep( 20000 );
-    console.log( "Main NET ERC1155 balance of token " + tokenId1155 + " for", addr_mn, "is", await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenId1155 ) );
-    console.log( "S-CHain  ERC1155 balance of token " + tokenId1155 + " for", addr_sc, "is", await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenId1155 ) );
+    const tokenId1155 = 1;
+    let erc1155balanceMN = 0, erc1155balanceSC = 0;
+    const show_erc1155_balances = async function() {
+        erc1155balanceMN = await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenId1155 );
+        erc1155balanceSC = await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenId1155 );
+        console.log( "Main NET ERC1155 balance for", addr_mn, "is", erc1155balanceMN );
+        console.log( "S-CHain  ERC1155 balance for", addr_sc, "is", erc1155balanceSC );
+    };
+    const wait_erc1155_balance_changed = async function( chain, addr, tokenERC1155, oldBalance ) {
+        console.log( "Waiting for ERC1155 balance changed for", addr, "on chain", chain.chainName, "..." );
+        for( ; true; ) {
+            const newBalance = await IMA.getERC1155balance( chain, addr, tokenERC1155, tokenId1155 );
+            if( newBalance.toString() != oldBalance.toString() )
+                break;
+            await IMA.sleep( 1000 );
+        }
+    };
+    const tokenAmount1155 = 1000;
+    await show_erc1155_balances();
     console.log( "M2S ERC1155 transfer of token " + tokenId1155 + " amount " + tokenAmount1155 + "..." );
     await IMA.depositERC1155toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC1155MN, tokenId1155, tokenAmount1155, opts );
-    console.log( "Main NET ERC1155 balance of token " + tokenId1155 + " for", addr_mn, "is", await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenId1155 ) );
-    console.log( "S-CHain  ERC1155 balance of token " + tokenId1155 + " for", addr_sc, "is", await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenId1155 ) );
-
-    await IMA.sleep( 20000 );
+    await wait_erc1155_balance_changed( sc, addr_sc, tokenERC1155SC, erc1155balanceSC );
+    await show_erc1155_balances();
     console.log( "S2M ERC1155 transfer of token " + tokenId1155 + " amount " + tokenAmount1155 + "..." );
     await IMA.withdrawERC1155fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC1155SC, tokenERC1155MN, tokenId1155, tokenAmount1155, opts );
-    console.log( "Main NET ERC1155 balance of token " + tokenId1155 + " for", addr_mn, "is", await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenId1155 ) );
-    console.log( "S-CHain  ERC1155 balance of token " + tokenId1155 + " for", addr_sc, "is", await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenId1155 ) );
+    await wait_erc1155_balance_changed( mn, addr_mn, tokenERC1155MN, erc1155balanceMN );
+    await show_erc1155_balances();
     /**/
     //
     // Batch ERC1155
     //
 
+    /**/
     const arrTokenId1155 = [ 1,2,3 ];
     const arrTokenAmount1155 = [ 999,1000,1001 ];
     const arrWalletAddressesMN = [], arrWalletAddressesSC = [];
@@ -333,24 +391,37 @@ async function run() {
         arrWalletAddressesMN.push( addr_mn );
         arrWalletAddressesSC.push( addr_sc );
     }
-    /**/
-    console.log( "Main NET ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_mn, "is", await IMA.getERC1155balanceOfBatch( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155 ) );
-    console.log( "S-CHain  ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_sc, "is", await IMA.getERC1155balanceOfBatch( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155 ) );
+    let batchErc1155balanceMN = null, batchErc1155balanceSC = null;
+    const show_batch_erc1155_balances = async function() {
+        batchErc1155balanceMN = await IMA.getERC1155balanceOfBatch( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155 );
+        batchErc1155balanceSC = await IMA.getERC1155balanceOfBatch( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155 );
+        console.log( "Main NET ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_mn, "is", batchErc1155balanceMN );
+        console.log( "S-CHain  ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_sc, "is", batchErc1155balanceSC );
+    };
+    const wait_batch_erc1155_balance_changed = async function( chain, arrWalletAddresses, tokenERC1155, arrTokenId1155, arrOldBalances ) {
+        console.log( "Waiting for batch ERC1155 balances changed for", arrWalletAddresses[0], "on chain", chain.chainName, "..." );
+        for( ; true; ) {
+            const arrNewBalances = await IMA.getERC1155balanceOfBatch( chain, arrWalletAddresses, tokenERC1155, arrTokenId1155 );
+            if( JSON.stringify( arrNewBalances ) != JSON.stringify( arrOldBalances ) )
+                break;
+            await IMA.sleep( 1000 );
+        }
+    };
+    await show_batch_erc1155_balances();
     console.log( "M2S ERC1155 batch transfer of tokens " + JSON.stringify( arrTokenId1155 ) + " amounts " + JSON.stringify( arrTokenAmount1155 ) + "..." );
     await IMA.depositBatchOfERC1155toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC1155MN, arrTokenId1155, arrTokenAmount1155, opts );
-    console.log( "Main NET ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_mn, "is", await IMA.getERC1155balanceOfBatch( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155 ) );
-    console.log( "S-CHain  ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_sc, "is", await IMA.getERC1155balanceOfBatch( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155 ) );
-
-    await IMA.sleep( 20000 );
+    await wait_batch_erc1155_balance_changed( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155, batchErc1155balanceSC );
+    await show_batch_erc1155_balances();
     console.log( "S2M ERC1155 batch transfer of tokens " + JSON.stringify( arrTokenId1155 ) + " amounts " + JSON.stringify( arrTokenAmount1155 ) + "..." );
     await IMA.withdrawBatchOfERC1155fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC1155SC, tokenERC1155MN, arrTokenId1155, arrTokenAmount1155, opts );
-    console.log( "Main NET ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_mn, "is", await IMA.getERC1155balanceOfBatch( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155 ) );
-    console.log( "S-CHain  ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_sc, "is", await IMA.getERC1155balanceOfBatch( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155 ) );
+    await wait_batch_erc1155_balance_changed( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155, batchErc1155balanceMN );
+    await show_batch_erc1155_balances();
     /**/
+
     //
     // Cross-chain chat
     //
-    await IMA.sleep( 20000 );
+    /**/
     console.log( "Initializing cross-chain chat..." );
     const joChatParticipantMN = new mn.w3.eth.Contract( chatParticipantInfoMN.abi, chatParticipantInfoMN.address );
     const joChatParticipantSC = new sc.w3.eth.Contract( chatParticipantInfoSC.abi, chatParticipantInfoSC.address );
@@ -358,23 +429,23 @@ async function run() {
     if( isNewTestTokensDeployment ) {
         console.log( "Initializing MN chat participant, chain name..." );
         const methodWithArguments_setThisChainName_MN = joChatParticipantMN.methods.setThisChainName( chain_name_mn );
-        await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setThisChainName_MN, joChatParticipantMN.options.address );
+        await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setThisChainName_MN, joChatParticipantMN.options.address, null, null, 0, 0, false, false );
         console.log( "Initializing MN chat participant, message proxy..." );
         const methodWithArguments_setMessageProxy_MN = joChatParticipantMN.methods.setMessageProxy( mn.jo_message_proxy_main_net.options.address );
-        await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setMessageProxy_MN, joChatParticipantMN.options.address );
+        await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setMessageProxy_MN, joChatParticipantMN.options.address, null, null, 0, 0, false, false );
         console.log( "Initializing MN chat participant, other participant reference..." );
         const methodWithArguments_setOtherParticipant_MN = joChatParticipantMN.methods.setOtherParticipant( joChatParticipantSC.options.address );
-        await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setOtherParticipant_MN, joChatParticipantMN.options.address );
+        await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setOtherParticipant_MN, joChatParticipantMN.options.address, null, null, 0, 0, false, false );
         //
         console.log( "Initializing SC chat participant, chain name..." );
         const methodWithArguments_setThisChainName_SC = joChatParticipantSC.methods.setThisChainName( chain_name_sc );
-        await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setThisChainName_SC, joChatParticipantSC.options.address );
+        await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setThisChainName_SC, joChatParticipantSC.options.address, null, null, 0, 0, false, false );
         console.log( "Initializing SC chat participant, message proxy..." );
         const methodWithArguments_setMessageProxy_SC = joChatParticipantSC.methods.setMessageProxy( sc.jo_message_proxy_s_chain.options.address );
-        await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setMessageProxy_SC, joChatParticipantSC.options.address );
+        await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setMessageProxy_SC, joChatParticipantSC.options.address, null, null, 0, 0, false, false );
         console.log( "Initializing SC chat participant, other participant reference..." );
         const methodWithArguments_setOtherParticipant_SC = joChatParticipantSC.methods.setOtherParticipant( joChatParticipantMN.options.address );
-        await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setOtherParticipant_SC, joChatParticipantSC.options.address );
+        await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setOtherParticipant_SC, joChatParticipantSC.options.address, null, null, 0, 0, false, false );
         //
         console.log( "Granting the EXTRA_CONTRACT_REGISTRAR_ROLE role on MN..." );
         await role_check_and_grant( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountMN );
@@ -382,12 +453,12 @@ async function run() {
         await role_check_and_grant( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountSC );
         console.log( "Registering MN chat participant..." );
         const methodWithArguments_registerExtraContractMN = mn.jo_message_proxy_main_net.methods.registerExtraContract( sc.chainName, joChatParticipantMN.options.address );
-        await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_registerExtraContractMN, mn.jo_message_proxy_main_net.options.address );
+        await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_registerExtraContractMN, mn.jo_message_proxy_main_net.options.address, null, null, 0, 0, false, false );
         console.log( "Registering SC chat participant..." );
         const methodWithArguments_registerExtraContractSC = sc.jo_message_proxy_s_chain.methods.registerExtraContract( mn.chainName, joChatParticipantSC.options.address );
-        await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_registerExtraContractSC, sc.jo_message_proxy_s_chain.options.address );
+        await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_registerExtraContractSC, sc.jo_message_proxy_s_chain.options.address, null, null, 0, 0, false, false );
         //
-        await IMA.sleep( 20000 );
+        //await IMA.sleep( 20000 );
     } // if( isNewTestTokensDeployment )
     const nicknameMN = "Alice", nicknameSC = "Bob";
     const arrChatPlan = [
@@ -410,18 +481,27 @@ async function run() {
         const joAccountDst = ( joPlannedMessage.direction == "M2S" ) ? joAccountSC : joAccountMN;
         console.log( ">>> " + joPlannedMessage.direction + ", " + nicknameSrc + " to " + nicknameDst + " => " + joPlannedMessage.text );
         const methodWithArguments_sendToOtherChain = joChatParticipantSrc.methods.sendToOtherChain( chainDst.chainName, nicknameSrc, joPlannedMessage.text );
-        if( ! await IMA.execute_send_on_method_with_arguments( chainSrc, joAccountSrc, methodWithArguments_sendToOtherChain, joChatParticipantSrc.options.address ) )
-            continue;
-        await IMA.sleep( 20000 );
-        const lastReceivedMessage = await joChatParticipantDst.methods.getLastReceivedMessage().call( { from: IMA.get_account_wallet_address( chainDst.w3, joAccountDst ) } );
-        const msg = { nickname: "" + lastReceivedMessage.nickname_, text: "" + lastReceivedMessage.text_ };
-        if( ! ( nicknameSrc == msg.nickname && joPlannedMessage.text == msg.text ) ) {
-            console.log( "<<< lastReceivedMessage:", msg );
-            const strError = "INTERCHAIN CHAT ERROR: Last delivered message is different then last sent one";
-            console.log( "!!!", strError );
-            throw new Error( strError );
+        await IMA.execute_send_on_method_with_arguments( chainSrc, joAccountSrc, methodWithArguments_sendToOtherChain, joChatParticipantSrc.options.address, null, null, 0, 0, false, false );
+        console.log( "    transferring..." );
+        for( ; true; ) {
+            let lastReceivedMessage = null;
+            try {
+                lastReceivedMessage = await joChatParticipantDst.methods.getLastReceivedMessage().call( { from: IMA.get_account_wallet_address( chainDst.w3, joAccountDst ) } );
+            } catch ( err ) {
+                // console.log( "    error", err.toString() );
+                await IMA.sleep( 1000 );
+                continue;
+            }
+            const msg = { nickname: "" + lastReceivedMessage.nickname_, text: "" + lastReceivedMessage.text_ };
+            if( ! ( nicknameSrc == msg.nickname && joPlannedMessage.text == msg.text ) ) {
+                // console.log( "    not delivered yet" );
+                await IMA.sleep( 1000 );
+                continue;
+            }
+            break;
         }
     }
+    /**/
 
     console.log( "Success. Test finished." );
 }
@@ -444,6 +524,6 @@ async function role_check_and_grant( chain, jo_contract, strRoleName, joAccount 
     if( ! has_role ) {
         console.log( "    Granting role..." );
         const methodWithArguments_grantRole = jo_contract.methods.grantRole( role, addressTo );
-        await IMA.execute_send_on_method_with_arguments( chain, joAccount, methodWithArguments_grantRole, jo_contract.options.address );
+        await IMA.execute_send_on_method_with_arguments( chain, joAccount, methodWithArguments_grantRole, jo_contract.options.address, null, null, 0, 0, false, false );
     }
 }
