@@ -272,15 +272,18 @@ async function reimbursement_withdraw_metamask() {
     show_balance_eth();
 }
 
-async function show_can_receive_eth_mn() {
-    document.getElementById( "idCanReceiveWeiMN" ).value = await IMA.viewETHtoReceive( mn, addr_mn );
-}
-
+let ethBalanceMN = 0, ethBalanceSC = 0, ethCanReceiveMN = 0;
 async function show_balance_eth_mn() {
-    document.getElementById( "idBalanceWeiMN" ).value = await IMA.getETHbalance( mn, addr_mn );
+    ethBalanceMN = await IMA.getETHbalance( mn, addr_mn );
+    document.getElementById( "idBalanceWeiMN" ).value = ethBalanceMN;
 }
 async function show_balance_eth_sc() {
-    document.getElementById( "idBalanceWeiSC" ).value = await IMA.getETHbalance( sc, addr_sc );
+    ethBalanceSC = await IMA.getETHbalance( sc, addr_sc );
+    document.getElementById( "idBalanceWeiSC" ).value = ethBalanceSC;
+}
+async function show_can_receive_eth_mn() {
+    ethCanReceiveMN = await IMA.viewETHtoReceive( mn, addr_mn );
+    document.getElementById( "idCanReceiveWeiMN" ).value = ethCanReceiveMN;
 }
 async function show_balance_eth() {
     await show_balance_eth_mn();
@@ -288,56 +291,189 @@ async function show_balance_eth() {
     await show_can_receive_eth_mn();
     await show_reimbursement_balance();
 }
+async function print_eth_balance_mn() {
+    ethBalanceMN = await IMA.getETHbalance( mn, addr_mn );
+    write_log( "Main NET real ETH balance for", addr_mn, "is", ethBalanceMN );
+}
+async function print_eth_balance_sc() {
+    ethBalanceSC = await IMA.getETHbalance( sc, addr_sc );
+    write_log( "S-CHain  real ETH balance for", addr_sc, "is", ethBalanceSC );
+}
+async function print_eth_balances() {
+    await print_eth_balance_mn();
+    await print_eth_balance_sc();
+}
+async function print_eth_can_receive_mn() {
+    ethCanReceiveMN = await IMA.viewETHtoReceive( mn, addr_mn );
+    write_log( "Can receive on Main NET for", addr_sc, "is", ethCanReceiveMN );
+}
+async function wait_for_eth_balance_changed( chain, addr, oldBalance ) {
+    write_log( "Waiting for ETH balance changed for", addr, "on chain", chain.chainName, "..." );
+    for( ; true; ) {
+        const newBalance = await IMA.getETHbalance( chain, addr );
+        if( newBalance != oldBalance )
+            break;
+        await IMA.sleep( 1000 );
+    }
+}
+async function wait_eth_can_receive_mn_changed() {
+    write_log( "Waiting for MN/ETH to receive changed..." );
+    for( ; true; ) {
+        const ethCanReceiveMN_new = await IMA.viewETHtoReceive( mn, addr_mn );
+        if( ethCanReceiveMN_new.toString() != ethCanReceiveMN.toString() )
+            break;
+        await IMA.sleep( 1000 );
+    }
+};
 
+let erc20balanceMN = 0, erc20balanceSC = 0;
 async function show_balance_erc20_mn() {
-    document.getElementById( "idBalanceAmountMN" ).value = await IMA.getERC20balance( mn, addr_mn, tokenERC20MN );
+    erc20balanceMN = await IMA.getERC20balance( mn, addr_mn, tokenERC20MN );
+    document.getElementById( "idBalanceAmountMN" ).value = erc20balanceMN;
 }
 async function show_balance_erc20_sc() {
-    document.getElementById( "idBalanceAmountSC" ).value = await IMA.getERC20balance( sc, addr_sc, tokenERC20SC );
+    erc20balanceSC = await IMA.getERC20balance( sc, addr_sc, tokenERC20SC );
+    document.getElementById( "idBalanceAmountSC" ).value = erc20balanceSC;
 }
 async function show_balance_erc20() {
     await show_balance_erc20_mn();
     await show_balance_erc20_sc();
 }
+async function print_erc20_balance_mn() {
+    erc20balanceMN = await IMA.getERC20balance( mn, addr_mn, tokenERC20MN );
+    write_log( "Main NET ERC20 balance for", addr_mn, "is", erc20balanceMN );
+}
+async function print_erc20_balance_sc() {
+    erc20balanceSC = await IMA.getERC20balance( sc, addr_sc, tokenERC20SC );
+    write_log( "S-CHain  ERC20 balance for", addr_sc, "is", erc20balanceSC );
+}
+async function print_erc20_balances() {
+    await print_erc20_balance_mn();
+    await print_erc20_balance_sc();
+}
+async function wait_erc20_balance_changed( chain, addr, tokenERC20, oldBalance ) {
+    write_log( "Waiting for ERC20 balance changed for", addr, "on chain", chain.chainName, "..." );
+    for( ; true; ) {
+        const newBalance = await IMA.getERC20balance( chain, addr, tokenERC20 );
+        if( newBalance.toString() != oldBalance.toString() )
+            break;
+        await IMA.sleep( 1000 );
+    }
+}
 
+let erc721ownerMN = null, erc721ownerSC = null;
 async function show_balance_erc721_mn() {
     const tokenID = document.getElementById( "idValueIdOfERC721" ).value.trim();
-    document.getElementById( "id721ownerMN" ).value = await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID );
+    erc721ownerMN = await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID );
+    document.getElementById( "id721ownerMN" ).value = erc721ownerMN;
 }
 async function show_balance_erc721_sc() {
     const tokenID = document.getElementById( "idValueIdOfERC721" ).value.trim();
-    document.getElementById( "id721ownerSC" ).value = await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID );
+    erc721ownerSC = await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID );
+    document.getElementById( "id721ownerSC" ).value = erc721ownerSC;
 }
 async function show_balance_erc721() {
     await show_balance_erc721_mn();
     await show_balance_erc721_sc();
 }
+async function print_erc721_owner_mn() {
+    const tokenID = document.getElementById( "idValueIdOfERC721" ).value.trim();
+    erc721ownerMN = await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID );
+    write_log( "ERC721 token ID " + tokenID + " owner on MN is " + erc721ownerMN );
+}
+async function print_erc721_owner_sc() {
+    const tokenID = document.getElementById( "idValueIdOfERC721" ).value.trim();
+    erc721ownerSC = await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID );
+    write_log( "ERC721 token ID " + tokenID + " owner on SC is " + erc721ownerSC );
+}
+async function print_erc721_owners() {
+    await print_erc721_owner_mn();
+    await print_erc721_owner_sc();
+}
+async function wait_erc721_owner_changed( chain, addr, tokenERC721, oldOwner ) {
+    const tokenID = document.getElementById( "idValueIdOfERC721" ).value.trim();
+    write_log( "Waiting for ERC721 owner changed on chain", chain.chainName, "..." );
+    for( ; true; ) {
+        const newOwner = await IMA.getERC721ownerOf( chain, addr, tokenERC721, tokenID );
+        if( newOwner.toString() != oldOwner.toString() )
+            break;
+        await IMA.sleep( 1000 );
+    }
+}
 
+let erc1155balanceMN = 0, erc1155balanceSC = 0;
+let batchErc1155balanceMN = null, batchErc1155balanceSC = null;
 async function show_balance_erc1155_mn() {
     const tokenID = document.getElementById( "idValueIdOfERC1155" ).value.trim();
-    document.getElementById( "idBalanceAmountMN1155" ).value = await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenID );
+    erc1155balanceMN = await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenID );
+    document.getElementById( "idBalanceAmountMN1155" ).value = erc1155balanceMN;
     //
     const arrTokenIDs = document.getElementById( "idValuesIDsOfERC1155" ).value.trim().split( "," );
     const arrWalletAddressesMN = [];
     for( let i = 0; i < arrTokenIDs.length; ++ i )
         arrWalletAddressesMN.push( addr_mn );
-
     document.getElementById( "idBalancesAmountsMN1155" ).value = ( await IMA.getERC1155balanceOfBatch( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenIDs ) ).join( "," );
 }
 async function show_balance_erc1155_sc() {
     const tokenID = document.getElementById( "idValueIdOfERC1155" ).value.trim();
-    document.getElementById( "idBalanceAmountSC1155" ).value = await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenID );
+    erc1155balanceSC = await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenID );
+    document.getElementById( "idBalanceAmountSC1155" ).value = erc1155balanceSC;
     //
     const arrTokenIDs = document.getElementById( "idValuesIDsOfERC1155" ).value.trim().split( "," );
     const arrWalletAddressesSC = [];
     for( let i = 0; i < arrTokenIDs.length; ++ i )
         arrWalletAddressesSC.push( addr_sc );
-
     document.getElementById( "idBalancesAmountsSC1155" ).value = ( await IMA.getERC1155balanceOfBatch( sc, arrWalletAddressesSC, tokenERC1155MN, arrTokenIDs ) ).join( "," );
 }
 async function show_balance_erc1155() {
     await show_balance_erc1155_mn();
     await show_balance_erc1155_sc();
+}
+async function print_erc1155_balance_mn() {
+    const tokenID = document.getElementById( "idValueIdOfERC1155" ).value.trim();
+    erc1155balanceMN = await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenID );
+    write_log( "Main NET ERC1155 balance for", addr_mn, "is", erc1155balanceMN );
+}
+async function print_erc1155_balance_sc() {
+    const tokenID = document.getElementById( "idValueIdOfERC1155" ).value.trim();
+    erc1155balanceSC = await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenID );
+    write_log( "S-CHain  ERC1155 balance for", addr_sc, "is", erc1155balanceSC );
+}
+async function print_erc1155_balances() {
+    await print_erc1155_balance_mn();
+    await print_erc1155_balance_sc();
+}
+async function wait_erc1155_balance_changed( chain, addr, tokenERC1155, oldBalance ) {
+    const tokenID = document.getElementById( "idValueIdOfERC1155" ).value.trim();
+    write_log( "Waiting for ERC1155 balance changed for", addr, "on chain", chain.chainName, "..." );
+    for( ; true; ) {
+        const newBalance = await IMA.getERC1155balance( chain, addr, tokenERC1155, tokenID );
+        if( newBalance.toString() != oldBalance.toString() )
+            break;
+        await IMA.sleep( 1000 );
+    }
+}
+async function print_batch_erc1155_balances() {
+    const arrTokenIDs = document.getElementById( "idValuesIDsOfERC1155" ).value.trim().split( "," );
+    const arrWalletAddressesMN = [];
+    for( let i = 0; i < arrTokenIDs.length; ++ i )
+        arrWalletAddressesMN.push( addr_mn );
+    const arrWalletAddressesSC = [];
+    for( let i = 0; i < arrTokenIDs.length; ++ i )
+        arrWalletAddressesSC.push( addr_sc );
+    batchErc1155balanceMN = await IMA.getERC1155balanceOfBatch( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenIDs );
+    batchErc1155balanceSC = await IMA.getERC1155balanceOfBatch( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenIDs );
+    write_log( "Main NET ERC1155 batch balances of tokens " + JSON.stringify( arrTokenIDs ) + " for", addr_mn, "is", batchErc1155balanceMN );
+    write_log( "S-CHain  ERC1155 batch balances of tokens " + JSON.stringify( arrTokenIDs ) + " for", addr_sc, "is", batchErc1155balanceSC );
+}
+async function wait_batch_erc1155_balance_changed( chain, arrWalletAddresses, tokenERC1155, arrTokenIDs, arrOldBalances ) {
+    write_log( "Waiting for batch ERC1155 balances changed for", arrWalletAddresses[0], "on chain", chain.chainName, "..." );
+    for( ; true; ) {
+        const arrNewBalances = await IMA.getERC1155balanceOfBatch( chain, arrWalletAddresses, tokenERC1155, arrTokenIDs );
+        if( JSON.stringify( arrNewBalances ) != JSON.stringify( arrOldBalances ) )
+            break;
+        await IMA.sleep( 1000 );
+    }
 }
 
 async function show_balance_mn() {
@@ -595,10 +731,11 @@ async function run_receive_eth_mn() {
     try {
         write_log( "<h3 class=\"test_header\">Receive ETH on MN</h3>" );
         await show_balance_eth();
-        write_log( "Can receive on Main NET for", addr_sc, "is", await IMA.viewETHtoReceive( mn, addr_mn ) );
+        await print_eth_can_receive_mn();
         await IMA.receiveETH( mn, joAccountMN, opts );
-        write_log( "Can receive on Main NET for", addr_sc, "is", await IMA.viewETHtoReceive( mn, addr_mn ) );
-        write_log( "Main NET real ETH balance for", addr_mn, "is", await IMA.getETHbalance( mn, addr_mn ) );
+        await wait_for_eth_balance_changed( mn, addr_mn, ethBalanceMN );
+        await print_eth_can_receive_mn();
+        await print_eth_balance_mn();
         write_log( "Done." );
         await show_balance_eth();
     } catch ( err ) {
@@ -617,109 +754,82 @@ async function run_all() {
 
     try {
         write_log( "<h3 class=\"test_header\">All Transfer Test</h3>" );
-        await show_balance_eth();
+
         //
         // ETH
         //
-        write_log( "Initial ETH balances are:" );
-        write_log( "Main NET real ETH balance for", addr_mn, "is", await IMA.getETHbalance( mn, addr_mn ) );
-        write_log( "S-CHain  real ETH balance for", addr_sc, "is", await IMA.getETHbalance( sc, addr_sc ) );
+        await show_balance_eth();
+        await print_eth_balances();
         const weiAmount = document.getElementById( "idValueWei" ).value.trim();
-
-        /**/
         write_log( "M2S ETH transfer of wei amount " + weiAmount + "..." );
         await IMA.depositETHtoSchain( mn, sc, joAccountMN, joAccountSC, weiAmount, opts );
-        write_log( "Main NET real ETH balance for", addr_mn, "is", await IMA.getETHbalance( mn, addr_mn ) );
-
+        await wait_for_eth_balance_changed( sc, addr_sc, ethBalanceSC );
         await show_balance_eth();
-
+        await print_eth_balances();
         write_log( "S2M ETH transfer of wei amount " + weiAmount + "..." );
         await IMA.withdrawETHfromSchain( sc, mn, joAccountSC, joAccountMN, weiAmount, opts );
-        write_log( "S-CHain  real ETH balance for", addr_sc, "is", await IMA.getETHbalance( sc, addr_sc ) );
-        write_log( "Main NET real ETH balance for", addr_mn, "is", await IMA.getETHbalance( mn, addr_mn ) );
-
+        await wait_eth_can_receive_mn_changed();
+        await print_eth_can_receive_mn();
+        await print_eth_balances();
         await show_balance_eth();
-
-        await IMA.sleep( 5000 );
-        write_log( "Can receive on Main NET for", addr_sc, "is", await IMA.viewETHtoReceive( mn, addr_mn ) );
+        await print_eth_can_receive_mn();
         await IMA.receiveETH( mn, joAccountMN, opts );
-        write_log( "Can receive on Main NET for", addr_sc, "is", await IMA.viewETHtoReceive( mn, addr_mn ) );
-        write_log( "Main NET real ETH balance for", addr_mn, "is", await IMA.getETHbalance( mn, addr_mn ) );
-
+        await wait_for_eth_balance_changed( mn, addr_mn, ethBalanceMN );
+        await print_eth_balances();
         await show_balance_eth();
-        // return;
-        /**/
 
-        //
-        //
-        //
-        await show_balance_erc20();
-        write_log( "Initial ERC20 balances are:" );
-        write_log( "Main NET ERC20 balance for", addr_mn, "is", await IMA.getERC20balance( mn, addr_mn, tokenERC20MN ) );
-        write_log( "S-CHain  ERC20 balance for", addr_sc, "is", await IMA.getERC20balance( sc, addr_sc, tokenERC20SC ) );
-
-        // await IMA.sleep( 5000 );
         //
         // ERC20
         //
-
         let tokenAmount = document.getElementById( "idValueAmountERC20" ).value.trim();
-        /**/
+        await show_balance_erc20();
+        await print_erc20_balances();
         write_log( "M2S ERC20 transfer of token amount " + tokenAmount + "..." );
         await IMA.depositERC20toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC20MN, tokenAmount, opts );
-        write_log( "Main NET ERC20 balance for", addr_mn, "is", await IMA.getERC20balance( mn, addr_mn, tokenERC20MN ) );
+        await wait_erc20_balance_changed( sc, addr_sc, tokenERC20SC, erc20balanceSC );
         await show_balance_erc20();
-
-        await IMA.sleep( 5000 );
+        await print_erc20_balances();
         write_log( "S2M ERC20 transfer of token amount " + tokenAmount + "..." );
         await IMA.withdrawERC20fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC20SC, tokenERC20MN, tokenAmount, opts );
-        write_log( "S-CHain  ERC20 balance for", addr_sc, "is", await IMA.getERC20balance( sc, addr_sc, tokenERC20SC ) );
-        /**/
+        await wait_erc20_balance_changed( sc, addr_sc, tokenERC20SC, erc20balanceSC );
         await show_balance_erc20();
+        await print_erc20_balances();
+
         //
         // ERC721
         //
-
-        /**/
-        await show_balance_erc721();
         let tokenID = document.getElementById( "idValueIdOfERC721" ).value.trim();
-        write_log( "ERC721 token ID " + tokenID + " owner on MN is " + await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID ) );
-        write_log( "ERC721 token ID " + tokenID + " owner on SC is " + await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID ) );
-
+        await show_balance_erc721();
+        await print_erc721_owners();
         write_log( "M2S ERC721 transfer of token ID " + tokenID + "..." );
         await IMA.depositERC721toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC721MN, tokenID, opts );
+        await wait_erc721_owner_changed( sc, addr_sc, tokenERC721SC, erc721ownerSC );
         await show_balance_erc721();
-        write_log( "ERC721 token ID " + tokenID + " owner on MN is " + await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID ) );
-        write_log( "ERC721 token ID " + tokenID + " owner on SC is " + await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID ) );
-
-        await IMA.sleep( 5000 );
+        await print_erc721_owners();
         write_log( "S2M ERC721 transfer of token ID " + tokenID + "..." );
         await IMA.withdrawERC721fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC721SC, tokenERC721MN, tokenID, opts );
+        await wait_erc721_owner_changed( mn, addr_mn, tokenERC721MN, erc721ownerMN );
         await show_balance_erc721();
-        write_log( "ERC721 token ID " + tokenID + " owner on MN is " + await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID ) );
-        write_log( "ERC721 token ID " + tokenID + " owner on SC is " + await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID ) );
-        /**/
+        await print_erc721_owners();
+
         //
         // ERC1155
         //
-
         tokenID = document.getElementById( "idValueIdOfERC1155" ).value.trim();
         tokenAmount = document.getElementById( "idValueAmountERC1155" ).value.trim();
-        /**/
         await show_balance_erc1155();
+        await print_erc1155_balances();
         write_log( "M2S ERC1155 transfer of token amount " + tokenAmount + "..." );
         await IMA.depositERC1155toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC1155MN, tokenID, tokenAmount, opts );
-        write_log( "Main NET ERC1155 balance for", addr_mn, "is", await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenID ) );
-        write_log( "S-CHain  ERC1155 balance for", addr_sc, "is", await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenID ) );
+        await wait_erc1155_balance_changed( sc, addr_sc, tokenERC1155SC, erc1155balanceSC );
         await show_balance_erc1155();
-
-        await IMA.sleep( 5000 );
+        await print_erc1155_balances();
         write_log( "S2M ERC1155 transfer of token amount " + tokenAmount + "..." );
         await IMA.withdrawERC1155fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC1155SC, tokenERC1155MN, tokenID, tokenAmount, opts );
-        write_log( "Main NET ERC1155 balance for", addr_mn, "is", await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenID ) );
-        write_log( "S-CHain  ERC1155 balance for", addr_sc, "is", await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenID ) );
-        /**/
+        await wait_erc1155_balance_changed( mn, addr_mn, tokenERC1155MN, erc1155balanceMN );
         await show_balance_erc1155();
+        await print_erc1155_balances();
+
         //
         // Batch ERC1155
         //
@@ -730,23 +840,18 @@ async function run_all() {
             arrWalletAddressesSC.push( addr_sc );
         }
         const arrTokenAmount1155 = document.getElementById( "idValuesAmountsERC1155" ).value.trim().split( "," );
-        /**/
         await show_balance_erc1155();
-        write_log( "Main NET ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_mn, "is", await IMA.getERC1155balanceOfBatch( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155 ) );
-        write_log( "S-CHain  ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_sc, "is", await IMA.getERC1155balanceOfBatch( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155 ) );
+        await print_batch_erc1155_balances();
         write_log( "M2S ERC1155 batch transfer of tokens " + JSON.stringify( arrTokenId1155 ) + " amounts " + JSON.stringify( arrTokenAmount1155 ) + "..." );
         await IMA.depositBatchOfERC1155toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC1155MN, arrTokenId1155, arrTokenAmount1155, opts );
-        write_log( "Main NET ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_mn, "is", await IMA.getERC1155balanceOfBatch( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155 ) );
-        write_log( "S-CHain  ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_sc, "is", await IMA.getERC1155balanceOfBatch( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155 ) );
+        await wait_batch_erc1155_balance_changed( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155, batchErc1155balanceSC );
         await show_balance_erc1155();
-
-        await IMA.sleep( 15000 );
+        await print_batch_erc1155_balances();
         write_log( "S2M ERC1155 batch transfer of tokens " + JSON.stringify( arrTokenId1155 ) + " amounts " + JSON.stringify( arrTokenAmount1155 ) + "..." );
         await IMA.withdrawBatchOfERC1155fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC1155SC, tokenERC1155MN, arrTokenId1155, arrTokenAmount1155, opts );
-        write_log( "Main NET ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_mn, "is", await IMA.getERC1155balanceOfBatch( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155 ) );
-        write_log( "S-CHain  ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_sc, "is", await IMA.getERC1155balanceOfBatch( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155 ) );
+        await wait_batch_erc1155_balance_changed( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155, batchErc1155balanceMN );
         await show_balance_erc1155();
-        /**/
+        await print_batch_erc1155_balances();
 
         write_log( "Done." );
     } catch ( err ) {
@@ -757,15 +862,13 @@ async function run_all() {
 async function run_m2s_eth_impl() {
     try {
         await show_balance_eth();
-        write_log( "Initial ETH balances are:" );
-        write_log( "Main NET real ETH balance for", addr_mn, "is", await IMA.getETHbalance( mn, addr_mn ) );
-        write_log( "S-CHain  real ETH balance for", addr_sc, "is", await IMA.getETHbalance( sc, addr_sc ) );
+        await print_eth_balances();
         const weiAmount = document.getElementById( "idValueWei" ).value.trim();
         write_log( "M2S ETH transfer of wei amount " + weiAmount + "..." );
         await IMA.depositETHtoSchain( mn, sc, joAccountMN, joAccountSC, weiAmount, opts );
+        await wait_for_eth_balance_changed( sc, addr_sc, ethBalanceSC );
         await show_balance_eth();
-        write_log( "Main NET real ETH balance for", addr_mn, "is", await IMA.getETHbalance( mn, addr_mn ) );
-        write_log( "S-CHain  real ETH balance for", addr_sc, "is", await IMA.getETHbalance( sc, addr_sc ) );
+        await print_eth_balances();
         write_log( "Done." );
     } catch ( err ) {
         write_log( "Test exception:", err.message );
@@ -797,15 +900,13 @@ async function run_m2s_eth_metamask() {
 async function run_s2m_eth_impl() {
     try {
         await show_balance_eth();
-        write_log( "Initial ETH balances are:" );
-        write_log( "Main NET real ETH balance for", addr_mn, "is", await IMA.getETHbalance( mn, addr_mn ) );
-        write_log( "S-CHain  real ETH balance for", addr_sc, "is", await IMA.getETHbalance( sc, addr_sc ) );
+        await print_eth_balances();
         const weiAmount = document.getElementById( "idValueWei" ).value.trim();
         write_log( "S2M ETH transfer of wei amount " + weiAmount + "..." );
         await IMA.withdrawETHfromSchain( sc, mn, joAccountSC, joAccountMN, weiAmount, opts );
+        await wait_eth_can_receive_mn_changed();
         await show_balance_eth();
-        write_log( "Main NET real ETH balance for", addr_mn, "is", await IMA.getETHbalance( mn, addr_mn ) );
-        write_log( "S-CHain  real ETH balance for", addr_sc, "is", await IMA.getETHbalance( sc, addr_sc ) );
+        await print_eth_balances();
         write_log( "Done." );
     } catch ( err ) {
         write_log( "Test exception:", err.message );
@@ -837,14 +938,12 @@ async function run_s2m_eth_metamask() {
 async function run_m2s_erc20_impl() {
     try {
         await show_balance_erc20();
-        write_log( "Initial ERC20 balances are:" );
-        write_log( "Main NET ERC20 balance for", addr_mn, "is", await IMA.getERC20balance( mn, addr_mn, tokenERC20MN ) );
-        write_log( "S-CHain  ERC20 balance for", addr_sc, "is", await IMA.getERC20balance( sc, addr_sc, tokenERC20SC ) );
+        await print_erc20_balances();
         const tokenAmount = document.getElementById( "idValueAmountERC20" ).value.trim();
         write_log( "M2S ERC20 transfer of token amount " + tokenAmount + "..." );
         await IMA.depositERC20toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC20MN, tokenAmount, opts );
-        write_log( "Main NET ERC20 balance for", addr_mn, "is", await IMA.getERC20balance( mn, addr_mn, tokenERC20MN ) );
-        write_log( "S-CHain  ERC20 balance for", addr_sc, "is", await IMA.getERC20balance( sc, addr_sc, tokenERC20SC ) );
+        await wait_erc20_balance_changed( sc, addr_sc, tokenERC20SC, erc20balanceSC );
+        await print_erc20_balances();
         await show_balance_erc20();
         write_log( "Done." );
     } catch ( err ) {
@@ -877,15 +976,13 @@ async function run_m2s_erc20_metamask() {
 async function run_s2m_erc20_impl() {
     try {
         await show_balance_erc20();
-        write_log( "Initial ERC20 balances are:" );
-        write_log( "Main NET ERC20 balance for", addr_mn, "is", await IMA.getERC20balance( mn, addr_mn, tokenERC20MN ) );
-        write_log( "S-CHain  ERC20 balance for", addr_sc, "is", await IMA.getERC20balance( sc, addr_sc, tokenERC20SC ) );
+        await print_erc20_balances();
         const tokenAmount = document.getElementById( "idValueAmountERC20" ).value.trim();
         write_log( "S2M ERC20 transfer of token amount " + tokenAmount + "..." );
         await IMA.withdrawERC20fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC20SC, tokenERC20MN, tokenAmount, opts );
-        write_log( "Main NET ERC20 balance for", addr_mn, "is", await IMA.getERC20balance( mn, addr_mn, tokenERC20MN ) );
-        write_log( "S-CHain  ERC20 balance for", addr_sc, "is", await IMA.getERC20balance( sc, addr_sc, tokenERC20SC ) );
+        await wait_erc20_balance_changed( sc, addr_sc, tokenERC20SC, erc20balanceSC );
         await show_balance_erc20();
+        await print_erc20_balances();
         write_log( "Done." );
     } catch ( err ) {
         write_log( "Test exception:", err.message );
@@ -916,15 +1013,14 @@ async function run_s2m_erc20_metamask() {
 
 async function run_m2s_erc721_impl() {
     try {
-        await show_balance_erc721();
         const tokenID = document.getElementById( "idValueIdOfERC721" ).value.trim();
-        write_log( "ERC721 token ID " + tokenID + " owner on MN is " + await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID ) );
-        write_log( "ERC721 token ID " + tokenID + " owner on SC is " + await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID ) );
+        await show_balance_erc721();
+        await print_erc721_owners();
         write_log( "M2S ERC721 transfer of token ID " + tokenID + "..." );
         await IMA.depositERC721toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC721MN, tokenID, opts );
+        await wait_erc721_owner_changed( sc, addr_sc, tokenERC721SC, erc721ownerSC );
         await show_balance_erc721();
-        write_log( "ERC721 token ID " + tokenID + " owner on MN is " + await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID ) );
-        write_log( "ERC721 token ID " + tokenID + " owner on SC is " + await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID ) );
+        await print_erc721_owners();
         write_log( "Done." );
     } catch ( err ) {
         write_log( "Test exception:", err.message );
@@ -955,15 +1051,14 @@ async function run_m2s_erc721_metamask() {
 
 async function run_s2m_erc721_impl() {
     try {
-        await show_balance_erc721();
         const tokenID = document.getElementById( "idValueIdOfERC721" ).value.trim();
-        write_log( "ERC721 token ID " + tokenID + " owner on MN is " + await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID ) );
-        write_log( "ERC721 token ID " + tokenID + " owner on SC is " + await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID ) );
+        await show_balance_erc721();
+        await print_erc721_owners();
         write_log( "S2M ERC721 transfer of token ID " + tokenID + "..." );
         await IMA.withdrawERC721fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC721SC, tokenERC721MN, tokenID, opts );
+        await wait_erc721_owner_changed( mn, addr_mn, tokenERC721MN, erc721ownerMN );
         await show_balance_erc721();
-        write_log( "ERC721 token ID " + tokenID + " owner on MN is " + await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID ) );
-        write_log( "ERC721 token ID " + tokenID + " owner on SC is " + await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID ) );
+        await print_erc721_owners();
         write_log( "Done." );
     } catch ( err ) {
         write_log( "Test exception:", err.message );
@@ -994,17 +1089,15 @@ async function run_s2m_erc721_metamask() {
 
 async function run_m2s_erc1155_impl() {
     try {
-        await show_balance_erc1155();
         const tokenId = document.getElementById( "idValueIdOfERC1155" ).value.trim();
-        write_log( "Initial ERC1155 balances are:" );
-        write_log( "Main NET ERC1155 balance for", addr_mn, "is", await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenId ) );
-        write_log( "S-CHain  ERC1155 balance for", addr_sc, "is", await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenId ) );
+        await show_balance_erc1155();
+        await print_erc1155_balances();
         const tokenAmount = document.getElementById( "idValueAmountERC1155" ).value.trim();
         write_log( "M2S ERC1155 transfer of token amount " + tokenAmount + "..." );
         await IMA.depositERC1155toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC1155MN, tokenId, tokenAmount, opts );
-        write_log( "Main NET ERC1155 balance for", addr_mn, "is", await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenId ) );
-        write_log( "S-CHain  ERC1155 balance for", addr_sc, "is", await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenId ) );
+        await wait_erc1155_balance_changed( sc, addr_sc, tokenERC1155SC, erc1155balanceSC );
         await show_balance_erc1155();
+        await print_erc1155_balances();
         write_log( "Done." );
     } catch ( err ) {
         write_log( "Test exception:", err.message );
@@ -1035,17 +1128,15 @@ async function run_m2s_erc1155_metamask() {
 
 async function run_s2m_erc1155_impl() {
     try {
-        await show_balance_erc1155();
         const tokenId = document.getElementById( "idValueIdOfERC1155" ).value.trim();
-        write_log( "Initial ERC1155 balances are:" );
-        write_log( "Main NET ERC1155 balance for", addr_mn, "is", await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenId ) );
-        write_log( "S-CHain  ERC1155 balance for", addr_sc, "is", await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenId ) );
+        await show_balance_erc1155();
+        await print_erc1155_balances();
         const tokenAmount = document.getElementById( "idValueAmountERC1155" ).value.trim();
         write_log( "S2M ERC1155 transfer of token amount " + tokenAmount + "..." );
         await IMA.withdrawERC1155fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC1155SC, tokenERC1155MN, tokenId, tokenAmount, opts );
-        write_log( "Main NET ERC1155 balance for", addr_mn, "is", await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenId ) );
-        write_log( "S-CHain  ERC1155 balance for", addr_sc, "is", await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenId ) );
+        await wait_erc1155_balance_changed( mn, addr_mn, tokenERC1155MN, erc1155balanceMN );
         await show_balance_erc1155();
+        await print_erc1155_balances();
         write_log( "Done." );
     } catch ( err ) {
         write_log( "Test exception:", err.message );
@@ -1076,7 +1167,6 @@ async function run_s2m_erc1155_metamask() {
 
 async function run_m2s_batch_erc1155_impl() {
     try {
-        await show_balance_erc1155();
         const arrTokenId1155 = document.getElementById( "idValuesIDsOfERC1155" ).value.trim().split( "," );
         const arrWalletAddressesMN = [], arrWalletAddressesSC = [];
         for( let i = 0; i < arrTokenId1155.length; ++ i ) {
@@ -1084,14 +1174,13 @@ async function run_m2s_batch_erc1155_impl() {
             arrWalletAddressesSC.push( addr_sc );
         }
         const arrTokenAmount1155 = document.getElementById( "idValuesAmountsERC1155" ).value.trim().split( "," );
-        write_log( "Initial ERC1155 balances are:" );
-        write_log( "Main NET ERC1155 batch balances for", addr_mn, "is", JSON.stringify( await IMA.getERC1155balanceOfBatch( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155 ) ) );
-        write_log( "S-CHain  ERC1155 batch balances for", addr_sc, "is", JSON.stringify( await IMA.getERC1155balanceOfBatch( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155 ) ) );
+        await show_balance_erc1155();
+        await print_batch_erc1155_balances();
         write_log( "M2S ERC1155 transfer of token amount " + JSON.stringify( arrTokenAmount1155 ) + "..." );
         await IMA.depositBatchOfERC1155toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC1155MN, arrTokenId1155, arrTokenAmount1155, opts );
-        write_log( "Main NET ERC1155 batch balances for", addr_mn, "is", JSON.stringify( await IMA.getERC1155balanceOfBatch( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155 ) ) );
-        write_log( "S-CHain  ERC1155 batch balances for", addr_sc, "is", JSON.stringify( await IMA.getERC1155balanceOfBatch( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155 ) ) );
+        await wait_batch_erc1155_balance_changed( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155, batchErc1155balanceSC );
         await show_balance_erc1155();
+        await print_batch_erc1155_balances();
         write_log( "Done." );
     } catch ( err ) {
         write_log( "Test exception:", err.message );
@@ -1122,7 +1211,6 @@ async function run_m2s_batch_erc1155_metamask() {
 
 async function run_s2m_batch_erc1155_impl() {
     try {
-        await show_balance_erc1155();
         const arrTokenId1155 = document.getElementById( "idValuesIDsOfERC1155" ).value.trim().split( "," );
         const arrWalletAddressesMN = [], arrWalletAddressesSC = [];
         for( let i = 0; i < arrTokenId1155.length; ++ i ) {
@@ -1130,14 +1218,13 @@ async function run_s2m_batch_erc1155_impl() {
             arrWalletAddressesSC.push( addr_sc );
         }
         const arrTokenAmount1155 = document.getElementById( "idValuesAmountsERC1155" ).value.trim().split( "," );
-        write_log( "Initial ERC1155 batch balances are:" );
-        write_log( "Main NET ERC1155 batch balances for", addr_mn, "is", JSON.stringify( await IMA.getERC1155balanceOfBatch( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155 ) ) );
-        write_log( "S-CHain  ERC1155 batch balances for", addr_sc, "is", JSON.stringify( await IMA.getERC1155balanceOfBatch( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155 ) ) );
+        await show_balance_erc1155();
+        await print_batch_erc1155_balances();
         write_log( "S2M ERC1155 transfer of token amount " + JSON.stringify( arrTokenAmount1155 ) + "..." );
         await IMA.withdrawBatchOfERC1155fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC1155SC, tokenERC1155MN, arrTokenId1155, arrTokenAmount1155, opts );
-        write_log( "Main NET ERC1155 batch balances for", addr_mn, "is", JSON.stringify( await IMA.getERC1155balanceOfBatch( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155 ) ) );
-        write_log( "S-CHain  ERC1155 batch balances for", addr_sc, "is", JSON.stringify( await IMA.getERC1155balanceOfBatch( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155 ) ) );
+        await wait_batch_erc1155_balance_changed( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155, batchErc1155balanceMN );
         await show_balance_erc1155();
+        await print_batch_erc1155_balances();
         write_log( "Done." );
     } catch ( err ) {
         write_log( "Test exception:", err.message );
