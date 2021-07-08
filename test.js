@@ -118,14 +118,14 @@ async function run() {
     //
     /**/
     console.log( "Checking needed CONSTANT_SETTER_ROLE role..." );
-    const haveNeededRole = await IMA.role_check( sc, sc.jo_community_locker, "CONSTANT_SETTER_ROLE", joAccountSC, joAccountSC );
+    let haveNeededRole = await IMA.role_check( sc, sc.jo_community_locker, "CONSTANT_SETTER_ROLE", joAccountSC, joAccountSC );
     console.log( "Done, got -", haveNeededRole );
     if( ! haveNeededRole ) {
         console.log( "Granting CONSTANT_SETTER_ROLE role..." );
         await IMA.role_grant( sc, sc.jo_community_locker, "CONSTANT_SETTER_ROLE", joAccountSC, joAccountSC );
         console.log( "Done." );
         console.log( "Checking needed CONSTANT_SETTER_ROLE role..." );
-        const haveNeededRole = await IMA.role_check( sc, sc.jo_community_locker, "CONSTANT_SETTER_ROLE", joAccountSC, joAccountSC );
+        haveNeededRole = await IMA.role_check( sc, sc.jo_community_locker, "CONSTANT_SETTER_ROLE", joAccountSC, joAccountSC );
         console.log( "Done, got -", haveNeededRole );
     }
     console.log( "Re-setting reimbursement time interval to zero on SC..." );
@@ -459,36 +459,39 @@ async function run() {
     const methodWithArguments_setOtherParticipant_SC = joChatParticipantSC.methods.setOtherParticipant( joChatParticipantMN.options.address );
     await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setOtherParticipant_SC, joChatParticipantSC.options.address, null, null, 0, 0, false, false );
     //
+    const joRegistrarMN = joAccountMN;
+    const joRegistrarSC = joAccountSC;
+    //
     console.log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on MN..." );
-    const haveNeededRoleMN = await IMA.role_check( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountMN, joAccountMN );
+    let haveNeededRoleMN = await IMA.role_check( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joRegistrarMN, joRegistrarMN );
     console.log( "Done, got -", haveNeededRoleMN );
     if( ! haveNeededRoleMN ) {
         console.log( "Granting EXTRA_CONTRACT_REGISTRAR_ROLE role on MN..." );
-        await IMA.role_grant( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountMN, joAccountMN );
+        await IMA.role_grant( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joRegistrarMN, joRegistrarMN );
         console.log( "Done." );
         console.log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on MN..." );
-        const haveNeededRole = await IMA.role_check( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountMN, joAccountMN );
-        console.log( "Done, got -", haveNeededRole );
+        haveNeededRoleMN = await IMA.role_check( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joRegistrarMN, joRegistrarMN );
+        console.log( "Done, got -", haveNeededRoleMN );
     }
     //
     console.log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on SC..." );
-    const haveNeededRoleSC = await IMA.role_check( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountSC, joAccountSC );
+    let haveNeededRoleSC = await IMA.role_check( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joRegistrarSC, joRegistrarSC );
     console.log( "Done, got -", haveNeededRoleSC );
     if( ! haveNeededRoleSC ) {
         console.log( "Granting EXTRA_CONTRACT_REGISTRAR_ROLE role on SC..." );
-        await IMA.role_grant( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountSC, joAccountSC );
+        await IMA.role_grant( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joRegistrarSC, joRegistrarSC );
         console.log( "Done." );
         console.log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on SC..." );
-        const haveNeededRole = await IMA.role_check( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountSC, joAccountSC );
-        console.log( "Done, got -", haveNeededRole );
+        haveNeededRoleSC = await IMA.role_check( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joRegistrarSC, joRegistrarSC );
+        console.log( "Done, got -", haveNeededRoleSC );
     }
     //
     console.log( "Registering MN chat participant..." );
     const methodWithArguments_registerExtraContractMN = mn.jo_message_proxy_main_net.methods.registerExtraContract( sc.chainName, joChatParticipantMN.options.address );
-    await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_registerExtraContractMN, mn.jo_message_proxy_main_net.options.address, null, null, 0, 0, false, false );
+    await IMA.execute_send_on_method_with_arguments( mn, joRegistrarMN, methodWithArguments_registerExtraContractMN, mn.jo_message_proxy_main_net.options.address, null, null, 0, 0, false, false );
     console.log( "Registering SC chat participant..." );
     const methodWithArguments_registerExtraContractSC = sc.jo_message_proxy_s_chain.methods.registerExtraContract( mn.chainName, joChatParticipantSC.options.address );
-    await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_registerExtraContractSC, sc.jo_message_proxy_s_chain.options.address, null, null, 0, 0, false, false );
+    await IMA.execute_send_on_method_with_arguments( sc, joRegistrarSC, methodWithArguments_registerExtraContractSC, sc.jo_message_proxy_s_chain.options.address, null, null, 0, 0, false, false );
     //
     //
     //

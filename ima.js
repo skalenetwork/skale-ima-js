@@ -2282,12 +2282,12 @@ async function ima_role_check( chain, jo_contract, strRoleName, joAccountTo, joA
     const addressTo = get_account_wallet_address( chain.w3, joAccountTo );
     const addressOwner = get_account_wallet_address( chain.w3, joAccountOwner );
     const role = await jo_contract.methods[strRoleName]().call( {
-        chainId: chain.chainID,
-        from: addressOwner,
+        chainId: ensure_starts_with_0x( chain.chainID.toString( 16 ) ),
+        from: addressOwner.toString(),
         gas: 8000000
     } );
     const haveRole = await jo_contract.methods.hasRole( role, addressTo ).call( {
-        chainId: chain.chainID,
+        chainId: ensure_starts_with_0x( chain.chainID.toString( 16 ) ),
         from: addressOwner,
         gas: 8000000
     } );
