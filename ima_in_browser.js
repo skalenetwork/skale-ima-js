@@ -30,8 +30,9 @@ function clear_log() {
 function write_log() {
     const args = Array.prototype.slice.call( arguments );
     const s = args.join( " " ) + "<br>";
-    document.getElementById( "idLog" ).innerHTML += s;
-    window.scrollTo( 0, document.body.scrollHeight );
+    const objLog = document.getElementById( "idLog" );
+    objLog.innerHTML += s;
+    objLog.scrollIntoView( false ); // scroll to bottom
 }
 
 const w3mod = Web3;

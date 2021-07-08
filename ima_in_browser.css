@@ -23,51 +23,77 @@
  * @copyright SKALE Labs 2019-Present
  */
 
- html,
-body,
-h1, h2, h3, h4, h5, h6,
-table, thead, tbody, tr, th, td,
-div, p,
-ul, ol, li,
-a {
-    font-family: "Helvetica", "Arial";
-    font-size: 9pt;
-    color: #E0E0E0;
-    background-color: black;
-}
-
 html,
 body {
-    overflow: visible;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
     border: 0;
     padding: 0;
     margin: 0;
 }
 
-body {
-    padding: 10pt;
+html,
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+table,
+thead,
+tbody,
+tr,
+th,
+td,
+div,
+p,
+ul,
+ol,
+li,
+a {
+    font-family: "Helvetica", "Arial";
+    font-size: 9pt;
+    color: #E0E0E0;
+    background-color: black;
+    vertical-align: top;
 }
 
-a, a:visited {
+/* body {
+    padding: 10pt;
+} */
+
+a,
+a:visited {
     color: #FFA080;
     text-decoration: none;
 }
+
 a:hover {
     color: #FFE0C0;
     text-decoration: underline;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
     color: #A080FF;
     margin-top: 2pt;
     margin-bottom: 1pt;
 }
+
 h1 {
     font-size: 11pt;
 }
+
 h2 {
     font-size: 9pt;
 }
+
 h3 {
     margin-top: 12pt;
 }
@@ -84,13 +110,68 @@ h3 {
     font-size: 28pt;
     font-weight: normal;
 }
+
 .svg_logo {
     display: inline-block;
 }
+
 .span_ima_js {
     display: inline-block;
     position: relative;
     top: -5pt;
+}
+
+.main_table_adv {
+    height: 50pt;
+    overflow: visible;
+}
+
+.main_table_commands_palette {
+    overflow: auto;
+    position: absolute;
+    left: 0;
+    top: 35pt;
+    right: 0;
+    bottom: 0;
+    max-width: 400pt;
+}
+
+.main_table .main_table_log {
+    height: 100%;
+}
+
+.main_table_log {
+    overflow: auto;
+    position: absolute;
+    left: 400pt;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+#idClearLog {
+    position: relative;
+    top: 11pt;
+}
+
+*::-webkit-scrollbar {
+    /* width */
+    width: 3pt;
+}
+
+*::-webkit-scrollbar-track {
+    /* Track */
+    background: #A080FF;
+}
+
+*::-webkit-scrollbar-thumb {
+    /* Handle */
+    background: #FFA080;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    /* Handle on hover */
+    background: #FFE0C0;
 }
 
 li,
@@ -122,6 +203,7 @@ td.main_table_commands {
 
 td.main_table_log {
     width: auto;
+    padding: 5pt;
 }
 
 .div_log {
@@ -133,7 +215,13 @@ td.main_table_log {
     margin: 0;
 }
 
-.value_input, .balance_input, .eth_private_key, .eth_address, .eth_url, .eth_chain_name, .eth_chain_id {
+.value_input,
+.balance_input,
+.eth_private_key,
+.eth_address,
+.eth_url,
+.eth_chain_name,
+.eth_chain_id {
     color: #E0E0E0;
     background-color: black;
     border: 1px solid yellow;
@@ -142,29 +230,35 @@ td.main_table_log {
     font-size: 9pt;
 }
 
-.value_input, .balance_input {
+.value_input,
+.balance_input {
     width: 320pt;
     text-align: right;
 }
+
 .owner721input {
     text-align: center;
 }
 
-.eth_private_key, .eth_address {
+.eth_private_key,
+.eth_address {
     width: 320pt;
     text-align: center;
 }
 
-.eth_address, .balance_input {
+.eth_address,
+.balance_input {
     border: 1px solid black;
 }
 
 .eth_url {
     width: 100pt;
 }
+
 .eth_chain_name {
     width: 50pt;
 }
+
 .eth_chain_id {
     width: 30pt;
 }
