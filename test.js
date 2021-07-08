@@ -117,6 +117,19 @@ async function run() {
     // Reimbursement
     //
     /**/
+    console.log( "Checking needed CONSTANT_SETTER_ROLE role..." );
+    const haveNeededRole = await IMA.role_check( sc, sc.jo_community_locker, "CONSTANT_SETTER_ROLE", joAccountSC, joAccountSC );
+    console.log( "Done, got -", haveNeededRole );
+    if( ! haveNeededRole ) {
+        console.log( "Granting CONSTANT_SETTER_ROLE role..." );
+        await IMA.role_grant( sc, sc.jo_community_locker, "CONSTANT_SETTER_ROLE", joAccountSC, joAccountSC );
+        console.log( "Done." );
+        console.log( "Checking needed CONSTANT_SETTER_ROLE role..." );
+        const haveNeededRole = await IMA.role_check( sc, sc.jo_community_locker, "CONSTANT_SETTER_ROLE", joAccountSC, joAccountSC );
+        console.log( "Done, got -", haveNeededRole );
+    }
+    console.log( "Re-setting reimbursement time interval to zero on SC..." );
+    await IMA.reimbursementSetRange( sc, joAccountSC, 0, opts );
     console.log( "Reimbursement ETH balance for", addr_mn, " on chain \"" + chain_name_sc + "\" is", await IMA.reimbursementGetBalance( mn, addr_mn, chain_name_sc ) );
     const weiAmountRecharge = "2000000000000000000";
     const weiAmountWithdraw = "1000000000000000000";
@@ -219,7 +232,7 @@ async function run() {
         contractERC721: null,
         contractERC1155: null
     };
-    let isNewTestTokensDeployment = false;
+    // let isNewTestTokensDeployment = false;
     if( helper_test_tokens.can_load_test_tokens( tokensMN ) && helper_test_tokens.can_load_test_tokens( tokensSC ) ) {
         console.log( "Will load test token ABIs..." );
         helper_test_tokens.load_test_tokens( tokensMN );
@@ -229,7 +242,7 @@ async function run() {
         console.log( JSON.stringify( tokensSC.joABI ) );
         console.log( "SC tokens loaded." );
     } else {
-        isNewTestTokensDeployment = true;
+        // isNewTestTokensDeployment = true;
         console.log( "Will deploy new test tokens..." );
         await helper_test_tokens.deploy_test_tokens_to( tokensMN );
         console.log( JSON.stringify( tokensMN.joABI ) );
@@ -426,40 +439,59 @@ async function run() {
     const joChatParticipantMN = new mn.w3.eth.Contract( chatParticipantInfoMN.abi, chatParticipantInfoMN.address );
     const joChatParticipantSC = new sc.w3.eth.Contract( chatParticipantInfoSC.abi, chatParticipantInfoSC.address );
     //
-    if( isNewTestTokensDeployment ) {
-        console.log( "Initializing MN chat participant, chain name..." );
-        const methodWithArguments_setThisChainName_MN = joChatParticipantMN.methods.setThisChainName( chain_name_mn );
-        await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setThisChainName_MN, joChatParticipantMN.options.address, null, null, 0, 0, false, false );
-        console.log( "Initializing MN chat participant, message proxy..." );
-        const methodWithArguments_setMessageProxy_MN = joChatParticipantMN.methods.setMessageProxy( mn.jo_message_proxy_main_net.options.address );
-        await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setMessageProxy_MN, joChatParticipantMN.options.address, null, null, 0, 0, false, false );
-        console.log( "Initializing MN chat participant, other participant reference..." );
-        const methodWithArguments_setOtherParticipant_MN = joChatParticipantMN.methods.setOtherParticipant( joChatParticipantSC.options.address );
-        await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setOtherParticipant_MN, joChatParticipantMN.options.address, null, null, 0, 0, false, false );
-        //
-        console.log( "Initializing SC chat participant, chain name..." );
-        const methodWithArguments_setThisChainName_SC = joChatParticipantSC.methods.setThisChainName( chain_name_sc );
-        await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setThisChainName_SC, joChatParticipantSC.options.address, null, null, 0, 0, false, false );
-        console.log( "Initializing SC chat participant, message proxy..." );
-        const methodWithArguments_setMessageProxy_SC = joChatParticipantSC.methods.setMessageProxy( sc.jo_message_proxy_s_chain.options.address );
-        await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setMessageProxy_SC, joChatParticipantSC.options.address, null, null, 0, 0, false, false );
-        console.log( "Initializing SC chat participant, other participant reference..." );
-        const methodWithArguments_setOtherParticipant_SC = joChatParticipantSC.methods.setOtherParticipant( joChatParticipantMN.options.address );
-        await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setOtherParticipant_SC, joChatParticipantSC.options.address, null, null, 0, 0, false, false );
-        //
-        console.log( "Granting the EXTRA_CONTRACT_REGISTRAR_ROLE role on MN..." );
-        await role_check_and_grant( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountMN );
-        console.log( "Granting the EXTRA_CONTRACT_REGISTRAR_ROLE role on SC..." );
-        await role_check_and_grant( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountSC );
-        console.log( "Registering MN chat participant..." );
-        const methodWithArguments_registerExtraContractMN = mn.jo_message_proxy_main_net.methods.registerExtraContract( sc.chainName, joChatParticipantMN.options.address );
-        await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_registerExtraContractMN, mn.jo_message_proxy_main_net.options.address, null, null, 0, 0, false, false );
-        console.log( "Registering SC chat participant..." );
-        const methodWithArguments_registerExtraContractSC = sc.jo_message_proxy_s_chain.methods.registerExtraContract( mn.chainName, joChatParticipantSC.options.address );
-        await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_registerExtraContractSC, sc.jo_message_proxy_s_chain.options.address, null, null, 0, 0, false, false );
-        //
-        //await IMA.sleep( 20000 );
-    } // if( isNewTestTokensDeployment )
+    console.log( "Initializing MN chat participant, chain name..." );
+    const methodWithArguments_setThisChainName_MN = joChatParticipantMN.methods.setThisChainName( chain_name_mn );
+    await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setThisChainName_MN, joChatParticipantMN.options.address, null, null, 0, 0, false, false );
+    console.log( "Initializing MN chat participant, message proxy..." );
+    const methodWithArguments_setMessageProxy_MN = joChatParticipantMN.methods.setMessageProxy( mn.jo_message_proxy_main_net.options.address );
+    await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setMessageProxy_MN, joChatParticipantMN.options.address, null, null, 0, 0, false, false );
+    console.log( "Initializing MN chat participant, other participant reference..." );
+    const methodWithArguments_setOtherParticipant_MN = joChatParticipantMN.methods.setOtherParticipant( joChatParticipantSC.options.address );
+    await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setOtherParticipant_MN, joChatParticipantMN.options.address, null, null, 0, 0, false, false );
+    //
+    console.log( "Initializing SC chat participant, chain name..." );
+    const methodWithArguments_setThisChainName_SC = joChatParticipantSC.methods.setThisChainName( chain_name_sc );
+    await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setThisChainName_SC, joChatParticipantSC.options.address, null, null, 0, 0, false, false );
+    console.log( "Initializing SC chat participant, message proxy..." );
+    const methodWithArguments_setMessageProxy_SC = joChatParticipantSC.methods.setMessageProxy( sc.jo_message_proxy_s_chain.options.address );
+    await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setMessageProxy_SC, joChatParticipantSC.options.address, null, null, 0, 0, false, false );
+    console.log( "Initializing SC chat participant, other participant reference..." );
+    const methodWithArguments_setOtherParticipant_SC = joChatParticipantSC.methods.setOtherParticipant( joChatParticipantMN.options.address );
+    await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setOtherParticipant_SC, joChatParticipantSC.options.address, null, null, 0, 0, false, false );
+    //
+    console.log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on MN..." );
+    const haveNeededRoleMN = await IMA.role_check( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountMN, joAccountMN );
+    console.log( "Done, got -", haveNeededRoleMN );
+    if( ! haveNeededRoleMN ) {
+        console.log( "Granting EXTRA_CONTRACT_REGISTRAR_ROLE role on MN..." );
+        await IMA.role_grant( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountMN, joAccountMN );
+        console.log( "Done." );
+        console.log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on MN..." );
+        const haveNeededRole = await IMA.role_check( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountMN, joAccountMN );
+        console.log( "Done, got -", haveNeededRole );
+    }
+    //
+    console.log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on SC..." );
+    const haveNeededRoleSC = await IMA.role_check( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountSC, joAccountSC );
+    console.log( "Done, got -", haveNeededRoleSC );
+    if( ! haveNeededRoleSC ) {
+        console.log( "Granting EXTRA_CONTRACT_REGISTRAR_ROLE role on SC..." );
+        await IMA.role_grant( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountSC, joAccountSC );
+        console.log( "Done." );
+        console.log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on SC..." );
+        const haveNeededRole = await IMA.role_check( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joAccountSC, joAccountSC );
+        console.log( "Done, got -", haveNeededRole );
+    }
+    //
+    console.log( "Registering MN chat participant..." );
+    const methodWithArguments_registerExtraContractMN = mn.jo_message_proxy_main_net.methods.registerExtraContract( sc.chainName, joChatParticipantMN.options.address );
+    await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_registerExtraContractMN, mn.jo_message_proxy_main_net.options.address, null, null, 0, 0, false, false );
+    console.log( "Registering SC chat participant..." );
+    const methodWithArguments_registerExtraContractSC = sc.jo_message_proxy_s_chain.methods.registerExtraContract( mn.chainName, joChatParticipantSC.options.address );
+    await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_registerExtraContractSC, sc.jo_message_proxy_s_chain.options.address, null, null, 0, 0, false, false );
+    //
+    //
+    //
     const nicknameMN = "Alice", nicknameSC = "Bob";
     const arrChatPlan = [
         { direction: "M2S", text: "Hi Bob!" },
@@ -508,22 +540,3 @@ async function run() {
 
 run();
 
-async function role_check_and_grant( chain, jo_contract, strRoleName, joAccount ) { // for example "VALIDATOR_MANAGER_ROLE"
-    const addressTo = IMA.get_account_wallet_address( chain.w3, joAccount );
-    const role = await jo_contract.methods[strRoleName]().call( {
-        chainId: chain.chainId,
-        from: addressTo,
-        gas: 8000000
-    } );
-    const has_role = await jo_contract.methods.hasRole( role, addressTo ).call( {
-        chainId: chain.chainId,
-        from: addressTo,
-        gas: 8000000
-    } );
-    console.log( "    Have role", has_role );
-    if( ! has_role ) {
-        console.log( "    Granting role..." );
-        const methodWithArguments_grantRole = jo_contract.methods.grantRole( role, addressTo );
-        await IMA.execute_send_on_method_with_arguments( chain, joAccount, methodWithArguments_grantRole, jo_contract.options.address, null, null, 0, 0, false, false );
-    }
-}

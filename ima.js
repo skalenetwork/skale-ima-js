@@ -2247,7 +2247,7 @@ async function ima_reimbursementSetRange(
     );
     const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
     const gasPrice = await transactionCustomizer.computeGasPrice( chain.w3, 200000000000 );
-    const estimatedGas = await transactionCustomizer.computeGas( methodWithArguments, chain.w3, 3000000, gasPrice, get_account_wallet_address( chain.w3, joAccount_s_chain ), wei_how_much );
+    const estimatedGas = await transactionCustomizer.computeGas( methodWithArguments, chain.w3, 3000000, gasPrice, get_account_wallet_address( chain.w3, joAccount ), wei_how_much );
     await dry_run_call( chain.w3, methodWithArguments, joAccount, opts.isIgnoreDRC ? true : false, gasPrice, estimatedGas, wei_how_much );
     const rawTx = {
         chainId: chain.chainID,
@@ -2274,6 +2274,69 @@ async function ima_reimbursementSetRange(
         } );
     }
     // print_gas_usage_report_from_array( "REIMBURSEMENT_SET_RANGE", jarrReceipts );
+    return true;
+}
+
+async function ima_role_check( chain, jo_contract, strRoleName, joAccountTo, joAccountOwner ) {
+    joAccountOwner = joAccountOwner || joAccountTo;
+    const addressTo = get_account_wallet_address( chain.w3, joAccountTo );
+    const addressOwner = get_account_wallet_address( chain.w3, joAccountOwner );
+    const role = await jo_contract.methods[strRoleName]().call( {
+        chainId: chain.chainID,
+        from: addressOwner,
+        gas: 8000000
+    } );
+    const haveRole = await jo_contract.methods.hasRole( role, addressTo ).call( {
+        chainId: chain.chainID,
+        from: addressOwner,
+        gas: 8000000
+    } );
+    return haveRole;
+}
+
+async function ima_role_grant( chain, jo_contract, strRoleName, joAccountTo, joAccountOwner, opts ) {
+    joAccountOwner = joAccountOwner || joAccountTo;
+    if( ima_role_check( chain, jo_contract, strRoleName, joAccountTo, joAccountOwner ) )
+        return true;
+    const addressTo = get_account_wallet_address( chain.w3, joAccountTo );
+    // const addressOwner = get_account_wallet_address( chain.w3, joAccountOwner );
+    transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerSC;
+    const jarrReceipts = []; // reimbursement_set_range
+    const wei_how_much = 0;
+    const tcnt = await get_web3_transactionCount( 10, chain.w3, get_account_wallet_address( chain.w3, joAccountOwner ), null );
+    const methodWithArguments = jo_contract.methods.grantRole(
+        // call params, last is destination account on S-chain
+        role, addressTo
+    );
+    const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
+    const gasPrice = await transactionCustomizer.computeGasPrice( chain.w3, 200000000000 );
+    const estimatedGas = await transactionCustomizer.computeGas( methodWithArguments, chain.w3, 8000000, gasPrice, get_account_wallet_address( chain.w3, joAccountOwner ), wei_how_much );
+    await dry_run_call( chain.w3, methodWithArguments, joAccountOwner, opts.isIgnoreDRC ? true : false, gasPrice, estimatedGas, wei_how_much );
+    const rawTx = {
+        chainId: chain.chainID,
+        nonce: tcnt,
+        gasPrice: gasPrice,
+        gas: estimatedGas,
+        to: jo_contract.options.address, // contract address
+        data: dataTx,
+        value: 0 // how much money to send
+    };
+    const tx = compose_tx_instance( rawTx );
+    const joSR = await safe_sign_transaction_with_account( chain.w3, tx, rawTx, joAccountOwner );
+    let joReceipt = null;
+    if( joSR.joACI.isAutoSend )
+        joReceipt = await get_web3_transactionReceipt( 10, chain.w3, joSR.txHashSent );
+    else {
+        const serializedTx = tx.serialize();
+        joReceipt = await safe_send_signed_transaction( chain.w3, serializedTx );
+    }
+    if( joReceipt && typeof joReceipt == "object" && "gasUsed" in joReceipt ) {
+        jarrReceipts.push( {
+            "description": "ima_role_grant",
+            "receipt": joReceipt
+        } );
+    }
+    // print_gas_usage_report_from_array( "IMA_ROLE_GRANT", jarrReceipts );
     return true;
 }
 
@@ -2381,6 +2444,8 @@ const IMA = {
     reimbursementWalletRecharge: ima_reimbursementWalletRecharge,
     reimbursementWalletWithdraw: ima_reimbursementWalletWithdraw,
     reimbursementSetRange: ima_reimbursementSetRange,
+    role_check: ima_role_check,
+    role_grant: ima_role_grant,
     execute_send_on_method_with_arguments: ima_execute_send_on_method_with_arguments
 };
 
