@@ -31,6 +31,115 @@ const ethereumjs_util = rq ? rq( "ethereumjs-util" ) : ethereumjs.Util;
 const ws = rq ? rq( "ws" ) : null;
 const request = rq ? rq( "request" ) : null;
 
+let g_write_log_custom_fn = null;
+
+function ima_ts_hr() {
+    const d = new Date();
+    const ts = Math.floor( ( d ).getTime() );
+    return ts;
+}
+
+function ima_ts_unix() {
+    const d = new Date();
+    const ts = Math.floor( ( d ).getTime() / 1000 );
+    return ts;
+}
+
+function trim_left_unneeded_timestamp_zeros( s ) {
+    while( s.length >= 2 ) {
+        if( s[0] == "0" && s[1] >= "0" && s[1] <= "9" )
+            s = s.substring( 1 );
+        else
+            break;
+    }
+    return s;
+}
+
+function ima_get_duration_string( tsFrom, tsTo ) {
+    let s = "";
+    let n = tsTo - tsFrom;
+    //
+    const ms = n % 1000;
+    n = Math.floor( n / 1000 );
+    s += "." + n2s( ms, 3 );
+    if( n == 0 )
+        return "0" + s;
+    //
+    const secs = n % 60;
+    n = Math.floor( n / 60 );
+    s = "" + n2s( secs, 2 ) + s;
+    if( n == 0 )
+        return trim_left_unneeded_timestamp_zeros( s );
+    s = ":" + s;
+    //
+    const mins = n % 60;
+    n = Math.floor( n / 60 );
+    s = "" + n2s( mins, 2 ) + s;
+    if( n == 0 )
+        return trim_left_unneeded_timestamp_zeros( s );
+    s = ":" + s;
+    //
+    const hours = n % 24;
+    n = Math.floor( n / 24 );
+    s = "" + n2s( hours, 2 ) + s;
+    if( n == 0 )
+        return trim_left_unneeded_timestamp_zeros( s );
+    //
+    return "" + n + " " + ( ( n > 1 ) ? "days" : "day" ) + "," + s;
+}
+
+function n2s( n, sz ) {
+    let s = "" + n;
+    while( s.length < sz )
+        s = "0" + s;
+    return s;
+}
+
+function ima_generate_timestamp_string() {
+    const ts = new Date();
+    const s =
+	"" + n2s( ts.getUTCFullYear(), 4 ) +
+	"-" + n2s( ts.getUTCMonth() + 1, 2 ) +
+	"-" + n2s( ts.getUTCDate(), 2 ) +
+	" " + n2s( ts.getUTCHours(), 2 ) +
+	":" + n2s( ts.getUTCMinutes(), 2 ) +
+	":" + n2s( ts.getUTCSeconds(), 2 ) +
+	"." + n2s( ts.getUTCMilliseconds(), 3 )
+	;
+    return s;
+}
+
+let g_b_log_timestamps = false;
+
+function ima_get_log_timestamps() {
+    return g_b_log_timestamps;
+}
+
+function ima_set_log_timestamps( b ) {
+    g_b_log_timestamps = b ? true : false;
+}
+
+function ima_get_write_log_custom_fn() {
+    return g_write_log_custom_fn;
+}
+
+function ima_set_write_log_custom_fn( fn ) {
+    g_write_log_custom_fn = fn;
+}
+
+function ima_write_log() {
+    const args = Array.prototype.slice.call( arguments );
+    let s = "";
+    if( ima_get_log_timestamps() )
+        s += ima_generate_timestamp_string() + " ";
+    s += args.join( " " );
+    if( g_write_log_custom_fn ) {
+        g_write_log_custom_fn( s );
+        return;
+    }
+    console.log( s );
+}
+
 function validateRadix( value, radix ) {
     value = "" + ( value ? value.toString() : "10" );
     value = value.trim();
@@ -146,10 +255,10 @@ async function do_connect( joCall, opts, fn ) {
                 joCall.wsConn = 0;
             } );
             joCall.wsConn.on( "error", function( err ) {
-                console.log( "" + joCall.url + " WS error: " + err.toString() );
+                ima_write_log( "" + joCall.url + " WS error: " + err.toString() );
             } );
             joCall.wsConn.on( "fail", function( err ) {
-                console.log( "" + joCall.url + " WS fail: " + err.toString() );
+                ima_write_log( "" + joCall.url + " WS fail: " + err.toString() );
             } );
             joCall.wsConn.on( "message", function incoming( data ) {
                 const joOut = JSON.parse( data );
@@ -218,9 +327,9 @@ async function do_call( joCall, joIn, fn ) {
         },
         function( err, response, body ) {
             if( response && response.statusCode && response.statusCode != 200 )
-                console.log( "WARNING: REST call status code is " + response.statusCode );
+                ima_write_log( "WARNING: REST call status code is " + response.statusCode );
             if( err ) {
-                console.log( "" + joCall.url + " REST error: " + err.toString() );
+                ima_write_log( "" + joCall.url + " REST error: " + err.toString() );
                 fn( joIn, null, err );
                 return;
             }
@@ -533,12 +642,12 @@ function parseIntOrHex( s ) {
 
 async function wait_for_next_block_to_appear( w3 ) {
     const nBlockNumber = await get_web3_blockNumber( 10, w3 );
-    // console.log( "Waiting for next block to appear..." );
-    // console.log( "    ...have block " + parseIntOrHex( nBlockNumber ) );
+    // ima_write_log( "Waiting for next block to appear..." );
+    // ima_write_log( "    ...have block " + parseIntOrHex( nBlockNumber ) );
     for( ; true; ) {
         await sleep( 1000 );
         const nBlockNumber2 = await get_web3_blockNumber( 10, w3 );
-        // console.log( "    ...have block " + parseIntOrHex( nBlockNumber2 ) );
+        // ima_write_log( "    ...have block " + parseIntOrHex( nBlockNumber2 ) );
         if( nBlockNumber2 > nBlockNumber )
             break;
     }
@@ -554,7 +663,7 @@ async function get_web3_blockNumber( attempts, w3 ) {
     } catch ( err ) {}
     let attemptIndex = 2;
     while( nLatestBlockNumber === "" && attemptIndex <= allAttempts ) {
-        // console.log( "Repeat getBlockNumber, attempt" + attemptIndex + ", previous result is: " + nLatestBlockNumber );
+        // ima_write_log( "Repeat getBlockNumber, attempt" + attemptIndex + ", previous result is: " + nLatestBlockNumber );
         await sleep( 10000 );
         try {
             nLatestBlockNumber = await w3.eth.getBlockNumber();
@@ -580,7 +689,7 @@ async function get_web3_pastEvents( attempts, joContract, strEventName, nBlockFr
     } catch ( err ) {}
     let attemptIndex = 2;
     while( joAllEventsInBlock === "" && attemptIndex <= allAttempts ) {
-        // console.log( "Repeat getPastEvents/" + strEventName + ", attempt " + attemptIndex + ", previous result is: "  + joAllEventsInBlock );
+        // ima_write_log( "Repeat getPastEvents/" + strEventName + ", attempt " + attemptIndex + ", previous result is: "  + joAllEventsInBlock );
         await sleep( 1000 );
         try {
             joAllEventsInBlock = await joContract.getPastEvents( "" + strEventName, {
@@ -606,7 +715,7 @@ async function get_web3_transactionCount( attempts, w3, address, param ) {
     } catch ( err ) {}
     let attemptIndex = 2;
     while( txc === "" && attemptIndex <= allAttempts ) {
-        // console.log( "Repeat getTransactionCount, attempt " + attemptIndex + ", previous result is: " + txc );
+        // ima_write_log( "Repeat getTransactionCount, attempt " + attemptIndex + ", previous result is: " + txc );
         await sleep( 10000 );
         try {
             txc = await w3.eth.getBlockNumber();
@@ -628,7 +737,7 @@ async function get_web3_transactionReceipt( attempts, w3, txHash ) {
     } catch ( err ) {}
     let attemptIndex = 2;
     while( txReceipt === "" && attemptIndex <= allAttempts ) {
-        // console.log( "Repeat getTransactionReceipt, attempt " + attemptIndex + ", previous result is: " + JSON.stringify( txReceipt ) );
+        // ima_write_log( "Repeat getTransactionReceipt, attempt " + attemptIndex + ", previous result is: " + JSON.stringify( txReceipt ) );
         await sleep( 10000 );
         try {
             txReceipt = await w3.eth.getTransactionReceipt( txHash );
@@ -2296,7 +2405,7 @@ async function ima_role_check( chain, jo_contract, strRoleName, joAccountTo, joA
 
 async function ima_role_grant( chain, jo_contract, strRoleName, joAccountTo, joAccountOwner, opts ) {
     joAccountOwner = joAccountOwner || joAccountTo;
-    if( ima_role_check( chain, jo_contract, strRoleName, joAccountTo, joAccountOwner ) )
+    if( await ima_role_check( chain, jo_contract, strRoleName, joAccountTo, joAccountOwner ) )
         return true;
     const addressTo = get_account_wallet_address( chain.w3, joAccountTo );
     // const addressOwner = get_account_wallet_address( chain.w3, joAccountOwner );
@@ -2306,7 +2415,7 @@ async function ima_role_grant( chain, jo_contract, strRoleName, joAccountTo, joA
     const tcnt = await get_web3_transactionCount( 10, chain.w3, get_account_wallet_address( chain.w3, joAccountOwner ), null );
     const methodWithArguments = jo_contract.methods.grantRole(
         // call params, last is destination account on S-chain
-        role, addressTo
+        chain.w3.utils.soliditySha3( strRoleName ), addressTo
     );
     const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
     const gasPrice = await transactionCustomizer.computeGasPrice( chain.w3, 200000000000 );
@@ -2362,7 +2471,7 @@ async function ima_execute_send_on_method_with_arguments( chain, joAccount, meth
             };
             const tx = compose_tx_instance( rawTx );
             if( isLog )
-                console.log( "    TX is", JSON.stringify( tx ) );
+                ima_write_log( "    TX is", JSON.stringify( tx ) );
             const joSR = await safe_sign_transaction_with_account( chain.w3, tx, rawTx, joAccount );
             let joReceipt = null;
             if( joSR.joACI.isAutoSend )
@@ -2372,11 +2481,11 @@ async function ima_execute_send_on_method_with_arguments( chain, joAccount, meth
                 joReceipt = await safe_send_signed_transaction( chain.w3, serializedTx );
             }
             if( isLog )
-                console.log( "    Receipt is", JSON.stringify( joReceipt ) );
+                ima_write_log( "    Receipt is", JSON.stringify( joReceipt ) );
             return joReceipt;
         } catch ( err ) {
             if( isErr )
-                console.log( "FAILED execution attempt " + ( idxAttempt + 1 ) + "/" + cntAttempts + ": " + err.toString() );
+                ima_write_log( "FAILED execution attempt " + ( idxAttempt + 1 ) + "/" + cntAttempts + ": " + err.toString() );
         }
         if( idxAttempt < ( cntAttempts - 1 ) )
             await sleep( nSleepTimeBetweenAttempts );
@@ -2385,6 +2494,15 @@ async function ima_execute_send_on_method_with_arguments( chain, joAccount, meth
 }
 
 const IMA = {
+    ts_hr: ima_ts_hr,
+    ts_unix: ima_ts_unix,
+    get_duration_string: ima_get_duration_string,
+    generate_timestamp_string: ima_generate_timestamp_string,
+    get_log_timestamps: ima_get_log_timestamps,
+    set_log_timestamps: ima_set_log_timestamps,
+    get_write_log_custom_fn: ima_get_write_log_custom_fn,
+    set_write_log_custom_fn: ima_set_write_log_custom_fn,
+    write_log: ima_write_log,
     validateRadix: validateRadix,
     validateInteger: validateInteger,
     toInteger: toInteger,

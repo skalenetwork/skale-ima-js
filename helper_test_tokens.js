@@ -28,7 +28,7 @@ const helper_shell = require( "./helper_shell.js" );
 const helper_utils = require( "./helper_utils.js" );
 
 async function deploy_test_tokens_to( opts ) {
-    console.log( "Deploying \"Test Tokens\" to \"" + opts.strTruffleNetworkName + "\"..." );
+    opts.IMA.write_log( "Deploying \"Test Tokens\" to \"" + opts.strTruffleNetworkName + "\"..." );
     const joEnv = {
         "ADDRESS_MINT_TO": "" + opts.strMintToAddress,
         "IS_SKIP_MINT": "" + ( opts.isMint ? "" : "true" ),
@@ -74,28 +74,28 @@ async function deploy_test_tokens_to( opts ) {
         const joAccountDeployerSC = {
             privateKey: opts.strDeployerPrivateKeySC
         };
-        console.log( "Adding/registering ERC20 contract on Main NET for \"" + opts.sc.chainName + "\". Main NET token address " + opts.tokensMN.contractERC20.options.address + "..." );
+        opts.IMA.write_log( "Adding/registering ERC20 contract on Main NET for \"" + opts.sc.chainName + "\". Main NET token address " + opts.tokensMN.contractERC20.options.address + "..." );
         await opts.IMA.addERC20TokenByOwnerMN(
             opts.mn,
             joAccountDeployerMN,
             opts.sc.chainName,
             opts.tokensMN.contractERC20.options.address
         );
-        console.log( "Adding/registering ERC721 contract on Main NET for \"" + opts.sc.chainName + "\". Main NET token address " + opts.tokensMN.contractERC721.options.address + "..." );
+        opts.IMA.write_log( "Adding/registering ERC721 contract on Main NET for \"" + opts.sc.chainName + "\". Main NET token address " + opts.tokensMN.contractERC721.options.address + "..." );
         await opts.IMA.addERC721TokenByOwnerMN(
             opts.mn,
             joAccountDeployerMN,
             opts.sc.chainName,
             opts.tokensMN.contractERC721.options.address
         );
-        console.log( "Adding/registering ERC1155 contract on Main NET for \"" + opts.sc.chainName + "\". Main NET token address " + opts.tokensMN.contractERC1155.options.address + "..." );
+        opts.IMA.write_log( "Adding/registering ERC1155 contract on Main NET for \"" + opts.sc.chainName + "\". Main NET token address " + opts.tokensMN.contractERC1155.options.address + "..." );
         await opts.IMA.addERC1155TokenByOwnerMN(
             opts.mn,
             joAccountDeployerMN,
             opts.sc.chainName,
             opts.tokensMN.contractERC1155.options.address
         );
-        console.log( "Adding/registering ERC20 contract on S-Chain for \"" + opts.mn.chainName + "\". Main NET token address " + opts.tokensMN.contractERC20.options.address + ". S-Chain token address " + opts.contractERC20.options.address + "..." );
+        opts.IMA.write_log( "Adding/registering ERC20 contract on S-Chain for \"" + opts.mn.chainName + "\". Main NET token address " + opts.tokensMN.contractERC20.options.address + ". S-Chain token address " + opts.contractERC20.options.address + "..." );
         await opts.IMA.addERC20TokenByOwnerSC(
             opts.sc,
             joAccountDeployerSC,
@@ -103,7 +103,7 @@ async function deploy_test_tokens_to( opts ) {
             opts.tokensMN.contractERC20.options.address,
             opts.contractERC20.options.address
         );
-        console.log( "Adding/registering ERC721 contract on S-Chain for \"" + opts.mn.chainName + "\". Main NET token address " + opts.tokensMN.contractERC721.options.address + ". S-Chain token address " + opts.contractERC721.options.address + "..." );
+        opts.IMA.write_log( "Adding/registering ERC721 contract on S-Chain for \"" + opts.mn.chainName + "\". Main NET token address " + opts.tokensMN.contractERC721.options.address + ". S-Chain token address " + opts.contractERC721.options.address + "..." );
         await opts.IMA.addERC721TokenByOwnerSC(
             opts.sc,
             joAccountDeployerSC,
@@ -111,7 +111,7 @@ async function deploy_test_tokens_to( opts ) {
             opts.tokensMN.contractERC721.options.address,
             opts.contractERC721.options.address
         );
-        console.log( "Adding/registering ERC1155 contract on S-Chain for \"" + opts.mn.chainName + "\". Main NET token address " + opts.tokensMN.contractERC1155.options.address + ". S-Chain token address " + opts.contractERC1155.options.address + "..." );
+        opts.IMA.write_log( "Adding/registering ERC1155 contract on S-Chain for \"" + opts.mn.chainName + "\". Main NET token address " + opts.tokensMN.contractERC1155.options.address + ". S-Chain token address " + opts.contractERC1155.options.address + "..." );
         await opts.IMA.addERC1155TokenByOwnerSC(
             opts.sc,
             joAccountDeployerSC,
@@ -120,7 +120,7 @@ async function deploy_test_tokens_to( opts ) {
             opts.contractERC1155.options.address
         );
     }
-    console.log( "Successful deployment of \"Test Tokens\" to \"" + opts.strTruffleNetworkName + "\"" );
+    opts.IMA.write_log( "Successful deployment of \"Test Tokens\" to \"" + opts.strTruffleNetworkName + "\"" );
 }
 
 function can_load_test_tokens( opts ) {

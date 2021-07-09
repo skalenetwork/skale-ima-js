@@ -42,8 +42,9 @@ const chain_name_sc = process.env.CHAIN_NAME_SCHAIN || "Bob";
 const chain_id_mn = process.env.CID_ETHEREUM ? IMA.parseIntOrHex( process.env.CID_ETHEREUM ) : ( 456 );
 const chain_id_sc = process.env.CID_SCHAIN ? IMA.parseIntOrHex( process.env.CID_SCHAIN ) : ( 123 );
 
-console.log( "Main NET", "(\"" + chain_name_mn + "\", " + url_mn + ") chain ID is", chain_id_mn, "=", "0x" + chain_id_mn.toString( 16 ) );
-console.log( "S_Chain", "(\"" + chain_name_sc + "\", " + url_sc_00 + ") chain ID is", chain_id_sc, "=", "0x" + chain_id_sc.toString( 16 ) );
+IMA.set_log_timestamps( true );
+IMA.write_log( "Main NET", "(\"" + chain_name_mn + "\", " + url_mn + ") chain ID is", chain_id_mn, "=", "0x" + chain_id_mn.toString( 16 ) );
+IMA.write_log( "S_Chain", "(\"" + chain_name_sc + "\", " + url_sc_00 + ") chain ID is", chain_id_sc, "=", "0x" + chain_id_sc.toString( 16 ) );
 
 async function run() {
 
@@ -113,32 +114,49 @@ async function run() {
         transactionCustomizer: null
     };
 
+    let ts0, ts1;
+
     //
     // Reimbursement
     //
     /**/
-    console.log( "Checking needed CONSTANT_SETTER_ROLE role..." );
+    IMA.write_log( "Checking needed CONSTANT_SETTER_ROLE role..." );
+    ts0 = IMA.ts_hr();
     let haveNeededRole = await IMA.role_check( sc, sc.jo_community_locker, "CONSTANT_SETTER_ROLE", joAccountSC, joAccountSC );
-    console.log( "Done, got -", haveNeededRole );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, got " + haveNeededRole + ", duration is " + IMA.get_duration_string( ts0, ts1 ) );
     if( ! haveNeededRole ) {
-        console.log( "Granting CONSTANT_SETTER_ROLE role..." );
-        await IMA.role_grant( sc, sc.jo_community_locker, "CONSTANT_SETTER_ROLE", joAccountSC, joAccountSC );
-        console.log( "Done." );
-        console.log( "Checking needed CONSTANT_SETTER_ROLE role..." );
+        IMA.write_log( "Granting CONSTANT_SETTER_ROLE role..." );
+        ts0 = IMA.ts_hr();
+        await IMA.role_grant( sc, sc.jo_community_locker, "CONSTANT_SETTER_ROLE", joAccountSC, joAccountSC, opts );
+        ts1 = IMA.ts_hr();
+        IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+        IMA.write_log( "Checking needed CONSTANT_SETTER_ROLE role..." );
+        ts0 = IMA.ts_hr();
         haveNeededRole = await IMA.role_check( sc, sc.jo_community_locker, "CONSTANT_SETTER_ROLE", joAccountSC, joAccountSC );
-        console.log( "Done, got -", haveNeededRole );
+        ts1 = IMA.ts_hr();
+        IMA.write_log( "Done, got ", haveNeededRole, " duration is " + IMA.get_duration_string( ts0, ts1 ) );
     }
-    console.log( "Re-setting reimbursement time interval to zero on SC..." );
+    IMA.write_log( "Re-setting reimbursement time interval to zero on SC..." );
+    ts0 = IMA.ts_hr();
     await IMA.reimbursementSetRange( sc, joAccountSC, 0, opts );
-    console.log( "Reimbursement ETH balance for", addr_mn, " on chain \"" + chain_name_sc + "\" is", await IMA.reimbursementGetBalance( mn, addr_mn, chain_name_sc ) );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+    IMA.write_log( "Reimbursement ETH balance for", addr_mn, " on chain \"" + chain_name_sc + "\" is", await IMA.reimbursementGetBalance( mn, addr_mn, chain_name_sc ) );
     const weiAmountRecharge = "2000000000000000000";
     const weiAmountWithdraw = "1000000000000000000";
-    console.log( "Reimbursement recharging wei amount " + weiAmountRecharge + "..." );
+    IMA.write_log( "Reimbursement recharging wei amount " + weiAmountRecharge + "..." );
+    ts0 = IMA.ts_hr();
     await IMA.reimbursementWalletRecharge( mn, joAccountMN, chain_name_sc, weiAmountRecharge, opts );
-    console.log( "Reimbursement ETH balance for", addr_mn, " on chain \"" + chain_name_sc + "\" is", await IMA.reimbursementGetBalance( mn, addr_mn, chain_name_sc ) );
-    console.log( "Reimbursement withdrawing wei amount " + weiAmountWithdraw + "..." );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+    IMA.write_log( "Reimbursement ETH balance for", addr_mn, " on chain \"" + chain_name_sc + "\" is", await IMA.reimbursementGetBalance( mn, addr_mn, chain_name_sc ) );
+    IMA.write_log( "Reimbursement withdrawing wei amount " + weiAmountWithdraw + "..." );
+    ts0 = IMA.ts_hr();
     await IMA.reimbursementWalletWithdraw( mn, joAccountMN, chain_name_sc, weiAmountWithdraw, opts );
-    console.log( "Reimbursement ETH balance for", addr_mn, " on chain \"" + chain_name_sc + "\" is", await IMA.reimbursementGetBalance( mn, addr_mn, chain_name_sc ) );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+    IMA.write_log( "Reimbursement ETH balance for", addr_mn, " on chain \"" + chain_name_sc + "\" is", await IMA.reimbursementGetBalance( mn, addr_mn, chain_name_sc ) );
     /**/
 
     //
@@ -150,44 +168,60 @@ async function run() {
     const show_eth_balances = async function() {
         ethBalanceMN = await IMA.getETHbalance( mn, addr_mn );
         ethBalanceSC = await IMA.getETHbalance( sc, addr_sc );
-        console.log( "Main NET real ETH balance for", addr_mn, "is", ethBalanceMN );
-        console.log( "S-CHain  real ETH balance for", addr_sc, "is", ethBalanceSC );
+        IMA.write_log( "Main NET real ETH balance for", addr_mn, "is", ethBalanceMN );
+        IMA.write_log( "S-Chain  real ETH balance for", addr_sc, "is", ethBalanceSC );
     };
     const wait_for_eth_balance_changed = async function( chain, addr, oldBalance ) {
-        console.log( "Waiting for ETH balance changed for", addr, "on chain", chain.chainName, "..." );
+        IMA.write_log( "Waiting for ETH balance changed for", addr, "on chain", chain.chainName, "..." );
+        const ts0 = IMA.ts_hr();
         for( ; true; ) {
             const newBalance = await IMA.getETHbalance( chain, addr );
             if( newBalance != oldBalance )
                 break;
             await IMA.sleep( 1000 );
         }
+        const ts1 = IMA.ts_hr();
+        IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     };
     await show_eth_balances();
-    console.log( "M2S ETH transfer of wei amount " + weiAmount + "..." );
+    IMA.write_log( "M2S ETH transfer of wei amount " + weiAmount + "..." );
+    ts0 = IMA.ts_hr();
     await IMA.depositETHtoSchain( mn, sc, joAccountMN, joAccountSC, weiAmount, opts );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     await wait_for_eth_balance_changed( sc, addr_sc, ethBalanceSC );
     await show_eth_balances();
 
     let ethCanReceiveMN = 0;
     const show_eth_can_receive_mn = async function() {
         ethCanReceiveMN = await IMA.viewETHtoReceive( mn, addr_mn );
-        console.log( "Can receive on Main NET for", addr_sc, "is", ethCanReceiveMN );
+        IMA.write_log( "Can receive on Main NET for", addr_sc, "is", ethCanReceiveMN );
     };
     const wait_eth_can_receive_mn_changed = async function() {
-        console.log( "Waiting for MN/ETH to receive changed..." );
+        IMA.write_log( "Waiting for MN/ETH to receive changed..." );
+        const ts0 = IMA.ts_hr();
         for( ; true; ) {
             const ethCanReceiveMN_new = await IMA.viewETHtoReceive( mn, addr_mn );
             if( ethCanReceiveMN_new.toString() != ethCanReceiveMN.toString() )
                 break;
             await IMA.sleep( 1000 );
         }
+        const ts1 = IMA.ts_hr();
+        IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     };
     await show_eth_can_receive_mn();
-    console.log( "S2M ETH transfer of wei amount " + weiAmount + "..." );
+    IMA.write_log( "S2M ETH transfer of wei amount " + weiAmount + "..." );
+    ts0 = IMA.ts_hr();
     await IMA.withdrawETHfromSchain( sc, mn, joAccountSC, joAccountMN, weiAmount, opts );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     await wait_eth_can_receive_mn_changed();
     await show_eth_can_receive_mn();
+    IMA.write_log( "Receiving..." );
+    ts0 = IMA.ts_hr();
     await IMA.receiveETH( mn, joAccountMN, opts );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     await wait_for_eth_balance_changed( mn, addr_mn, ethBalanceMN );
     await show_eth_can_receive_mn();
     await show_eth_balances();
@@ -234,22 +268,31 @@ async function run() {
     };
     // let isNewTestTokensDeployment = false;
     if( helper_test_tokens.can_load_test_tokens( tokensMN ) && helper_test_tokens.can_load_test_tokens( tokensSC ) ) {
-        console.log( "Will load test token ABIs..." );
+        IMA.write_log( "Will load test token ABIs..." );
+        ts0 = IMA.ts_hr();
         helper_test_tokens.load_test_tokens( tokensMN );
-        console.log( JSON.stringify( tokensMN.joABI ) );
-        console.log( "MN tokens loaded." );
+        ts1 = IMA.ts_hr();
+        IMA.write_log( JSON.stringify( tokensMN.joABI ) );
+        IMA.write_log( "    Done, MN tokens loaded, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+        ts0 = IMA.ts_hr();
         helper_test_tokens.load_test_tokens( tokensSC );
-        console.log( JSON.stringify( tokensSC.joABI ) );
-        console.log( "SC tokens loaded." );
+        ts1 = IMA.ts_hr();
+        IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+        IMA.write_log( JSON.stringify( tokensSC.joABI ) );
+        IMA.write_log( "    Done, SC tokens loaded, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     } else {
         // isNewTestTokensDeployment = true;
-        console.log( "Will deploy new test tokens..." );
+        IMA.write_log( "Will deploy new test tokens..." );
+        ts0 = IMA.ts_hr();
         await helper_test_tokens.deploy_test_tokens_to( tokensMN );
-        console.log( JSON.stringify( tokensMN.joABI ) );
-        console.log( "MN tokens deployed." );
+        ts1 = IMA.ts_hr();
+        IMA.write_log( JSON.stringify( tokensMN.joABI ) );
+        IMA.write_log( "    Done, MN tokens deployed, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+        ts0 = IMA.ts_hr();
         await helper_test_tokens.deploy_test_tokens_to( tokensSC );
-        console.log( JSON.stringify( tokensSC.joABI ) );
-        console.log( "SC tokens deployed." );
+        ts1 = IMA.ts_hr();
+        IMA.write_log( JSON.stringify( tokensSC.joABI ) );
+        IMA.write_log( "    Done, SC tokens deployed, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     }
 
     //
@@ -304,26 +347,35 @@ async function run() {
     const show_erc20_balances = async function() {
         erc20balanceMN = await IMA.getERC20balance( mn, addr_mn, tokenERC20MN );
         erc20balanceSC = await IMA.getERC20balance( sc, addr_sc, tokenERC20SC );
-        console.log( "Main NET ERC20 balance for", addr_mn, "is", erc20balanceMN );
-        console.log( "S-CHain  ERC20 balance for", addr_sc, "is", erc20balanceSC );
+        IMA.write_log( "Main NET ERC20 balance for", addr_mn, "is", erc20balanceMN );
+        IMA.write_log( "S-Chain  ERC20 balance for", addr_sc, "is", erc20balanceSC );
     };
     const wait_erc20_balance_changed = async function( chain, addr, tokenERC20, oldBalance ) {
-        console.log( "Waiting for ERC20 balance changed for", addr, "on chain", chain.chainName, "..." );
+        IMA.write_log( "Waiting for ERC20 balance changed for", addr, "on chain", chain.chainName, "..." );
+        const ts0 = IMA.ts_hr();
         for( ; true; ) {
             const newBalance = await IMA.getERC20balance( chain, addr, tokenERC20 );
             if( newBalance.toString() != oldBalance.toString() )
                 break;
             await IMA.sleep( 1000 );
         }
+        const ts1 = IMA.ts_hr();
+        IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     };
     const tokenAmount = 1000;
     await show_erc20_balances();
-    console.log( "M2S ERC20 transfer of token amount " + tokenAmount + "..." );
+    IMA.write_log( "M2S ERC20 transfer of token amount " + tokenAmount + "..." );
+    ts0 = IMA.ts_hr();
     await IMA.depositERC20toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC20MN, tokenAmount, opts );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     await wait_erc20_balance_changed( sc, addr_sc, tokenERC20SC, erc20balanceSC );
     await show_erc20_balances();
-    console.log( "S2M ERC20 transfer of token amount " + tokenAmount + "..." );
+    IMA.write_log( "S2M ERC20 transfer of token amount " + tokenAmount + "..." );
+    ts0 = IMA.ts_hr();
     await IMA.withdrawERC20fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC20SC, tokenERC20MN, tokenAmount, opts );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     await wait_erc20_balance_changed( mn, addr_mn, tokenERC20MN, erc20balanceMN );
     await show_erc20_balances();
     /**/
@@ -337,25 +389,34 @@ async function run() {
     const show_erc721_owners = async function() {
         erc721ownerMN = await IMA.getERC721ownerOf( mn, addr_mn, tokenERC721MN, tokenID );
         erc721ownerSC = await IMA.getERC721ownerOf( sc, addr_sc, tokenERC721SC, tokenID );
-        console.log( "ERC721 token ID " + tokenID + " owner on MN is " + erc721ownerMN );
-        console.log( "ERC721 token ID " + tokenID + " owner on SC is " + erc721ownerSC );
+        IMA.write_log( "ERC721 token ID " + tokenID + " owner on MN is " + erc721ownerMN );
+        IMA.write_log( "ERC721 token ID " + tokenID + " owner on SC is " + erc721ownerSC );
     };
     const wait_erc721_owner_changed = async function( chain, addr, tokenERC721, oldOwner ) {
-        console.log( "Waiting for ERC721 owner changed on chain", chain.chainName, "..." );
+        IMA.write_log( "Waiting for ERC721 owner changed on chain", chain.chainName, "..." );
+        const ts0 = IMA.ts_hr();
         for( ; true; ) {
             const newOwner = await IMA.getERC721ownerOf( chain, addr, tokenERC721, tokenID );
             if( newOwner.toString() != oldOwner.toString() )
                 break;
             await IMA.sleep( 1000 );
         }
+        const ts1 = IMA.ts_hr();
+        IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     };
     await show_erc721_owners();
-    console.log( "M2S ERC721 transfer of token ID " + tokenID + "..." );
+    IMA.write_log( "M2S ERC721 transfer of token ID " + tokenID + "..." );
+    ts0 = IMA.ts_hr();
     await IMA.depositERC721toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC721MN, tokenID, opts );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     await wait_erc721_owner_changed( sc, addr_sc, tokenERC721SC, erc721ownerSC );
     await show_erc721_owners();
-    console.log( "S2M ERC721 transfer of token ID " + tokenID + "..." );
+    IMA.write_log( "S2M ERC721 transfer of token ID " + tokenID + "..." );
+    ts0 = IMA.ts_hr();
     await IMA.withdrawERC721fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC721SC, tokenERC721MN, tokenID, opts );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     await wait_erc721_owner_changed( mn, addr_mn, tokenERC721MN, erc721ownerMN );
     await show_erc721_owners();
     /**/
@@ -369,26 +430,35 @@ async function run() {
     const show_erc1155_balances = async function() {
         erc1155balanceMN = await IMA.getERC1155balance( mn, addr_mn, tokenERC1155MN, tokenId1155 );
         erc1155balanceSC = await IMA.getERC1155balance( sc, addr_sc, tokenERC1155SC, tokenId1155 );
-        console.log( "Main NET ERC1155 balance for", addr_mn, "is", erc1155balanceMN );
-        console.log( "S-CHain  ERC1155 balance for", addr_sc, "is", erc1155balanceSC );
+        IMA.write_log( "Main NET ERC1155 balance for", addr_mn, "is", erc1155balanceMN );
+        IMA.write_log( "S-Chain  ERC1155 balance for", addr_sc, "is", erc1155balanceSC );
     };
     const wait_erc1155_balance_changed = async function( chain, addr, tokenERC1155, oldBalance ) {
-        console.log( "Waiting for ERC1155 balance changed for", addr, "on chain", chain.chainName, "..." );
+        IMA.write_log( "Waiting for ERC1155 balance changed for", addr, "on chain", chain.chainName, "..." );
+        const ts0 = IMA.ts_hr();
         for( ; true; ) {
             const newBalance = await IMA.getERC1155balance( chain, addr, tokenERC1155, tokenId1155 );
             if( newBalance.toString() != oldBalance.toString() )
                 break;
             await IMA.sleep( 1000 );
         }
+        const ts1 = IMA.ts_hr();
+        IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     };
     const tokenAmount1155 = 1000;
     await show_erc1155_balances();
-    console.log( "M2S ERC1155 transfer of token " + tokenId1155 + " amount " + tokenAmount1155 + "..." );
+    IMA.write_log( "M2S ERC1155 transfer of token " + tokenId1155 + " amount " + tokenAmount1155 + "..." );
+    ts0 = IMA.ts_hr();
     await IMA.depositERC1155toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC1155MN, tokenId1155, tokenAmount1155, opts );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     await wait_erc1155_balance_changed( sc, addr_sc, tokenERC1155SC, erc1155balanceSC );
     await show_erc1155_balances();
-    console.log( "S2M ERC1155 transfer of token " + tokenId1155 + " amount " + tokenAmount1155 + "..." );
+    IMA.write_log( "S2M ERC1155 transfer of token " + tokenId1155 + " amount " + tokenAmount1155 + "..." );
+    ts0 = IMA.ts_hr();
     await IMA.withdrawERC1155fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC1155SC, tokenERC1155MN, tokenId1155, tokenAmount1155, opts );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     await wait_erc1155_balance_changed( mn, addr_mn, tokenERC1155MN, erc1155balanceMN );
     await show_erc1155_balances();
     /**/
@@ -408,25 +478,34 @@ async function run() {
     const show_batch_erc1155_balances = async function() {
         batchErc1155balanceMN = await IMA.getERC1155balanceOfBatch( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155 );
         batchErc1155balanceSC = await IMA.getERC1155balanceOfBatch( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155 );
-        console.log( "Main NET ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_mn, "is", batchErc1155balanceMN );
-        console.log( "S-CHain  ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_sc, "is", batchErc1155balanceSC );
+        IMA.write_log( "Main NET ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_mn, "is", batchErc1155balanceMN );
+        IMA.write_log( "S-Chain  ERC1155 batch balances of tokens " + JSON.stringify( arrTokenId1155 ) + " for", addr_sc, "is", batchErc1155balanceSC );
     };
     const wait_batch_erc1155_balance_changed = async function( chain, arrWalletAddresses, tokenERC1155, arrTokenId1155, arrOldBalances ) {
-        console.log( "Waiting for batch ERC1155 balances changed for", arrWalletAddresses[0], "on chain", chain.chainName, "..." );
+        IMA.write_log( "Waiting for batch ERC1155 balances changed for", arrWalletAddresses[0], "on chain", chain.chainName, "..." );
+        const ts0 = IMA.ts_hr();
         for( ; true; ) {
             const arrNewBalances = await IMA.getERC1155balanceOfBatch( chain, arrWalletAddresses, tokenERC1155, arrTokenId1155 );
             if( JSON.stringify( arrNewBalances ) != JSON.stringify( arrOldBalances ) )
                 break;
             await IMA.sleep( 1000 );
         }
+        const ts1 = IMA.ts_hr();
+        IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     };
     await show_batch_erc1155_balances();
-    console.log( "M2S ERC1155 batch transfer of tokens " + JSON.stringify( arrTokenId1155 ) + " amounts " + JSON.stringify( arrTokenAmount1155 ) + "..." );
+    IMA.write_log( "M2S ERC1155 batch transfer of tokens " + JSON.stringify( arrTokenId1155 ) + " amounts " + JSON.stringify( arrTokenAmount1155 ) + "..." );
+    ts0 = IMA.ts_hr();
     await IMA.depositBatchOfERC1155toSchain( mn, sc, joAccountMN, joAccountSC, tokenERC1155MN, arrTokenId1155, arrTokenAmount1155, opts );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     await wait_batch_erc1155_balance_changed( sc, arrWalletAddressesSC, tokenERC1155SC, arrTokenId1155, batchErc1155balanceSC );
     await show_batch_erc1155_balances();
-    console.log( "S2M ERC1155 batch transfer of tokens " + JSON.stringify( arrTokenId1155 ) + " amounts " + JSON.stringify( arrTokenAmount1155 ) + "..." );
+    IMA.write_log( "S2M ERC1155 batch transfer of tokens " + JSON.stringify( arrTokenId1155 ) + " amounts " + JSON.stringify( arrTokenAmount1155 ) + "..." );
+    ts0 = IMA.ts_hr();
     await IMA.withdrawBatchOfERC1155fromSchain( sc, mn, joAccountSC, joAccountMN, tokenERC1155SC, tokenERC1155MN, arrTokenId1155, arrTokenAmount1155, opts );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     await wait_batch_erc1155_balance_changed( mn, arrWalletAddressesMN, tokenERC1155MN, arrTokenId1155, batchErc1155balanceMN );
     await show_batch_erc1155_balances();
     /**/
@@ -435,63 +514,94 @@ async function run() {
     // Cross-chain chat
     //
     /**/
-    console.log( "Initializing cross-chain chat..." );
+    IMA.write_log( "Initializing cross-chain chat..." );
+    ts0 = IMA.ts_hr();
     const joChatParticipantMN = new mn.w3.eth.Contract( chatParticipantInfoMN.abi, chatParticipantInfoMN.address );
     const joChatParticipantSC = new sc.w3.eth.Contract( chatParticipantInfoSC.abi, chatParticipantInfoSC.address );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     //
-    console.log( "Initializing MN chat participant, chain name..." );
+    IMA.write_log( "Initializing MN chat participant, chain name..." );
+    ts0 = IMA.ts_hr();
     const methodWithArguments_setThisChainName_MN = joChatParticipantMN.methods.setThisChainName( chain_name_mn );
     await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setThisChainName_MN, joChatParticipantMN.options.address, null, null, 0, 0, false, false );
-    console.log( "Initializing MN chat participant, message proxy..." );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+    IMA.write_log( "Initializing MN chat participant, message proxy..." );
+    ts0 = IMA.ts_hr();
     const methodWithArguments_setMessageProxy_MN = joChatParticipantMN.methods.setMessageProxy( mn.jo_message_proxy_main_net.options.address );
     await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setMessageProxy_MN, joChatParticipantMN.options.address, null, null, 0, 0, false, false );
-    console.log( "Initializing MN chat participant, other participant reference..." );
+    IMA.write_log( "Initializing MN chat participant, other participant reference..." );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+    ts0 = IMA.ts_hr();
     const methodWithArguments_setOtherParticipant_MN = joChatParticipantMN.methods.setOtherParticipant( joChatParticipantSC.options.address );
     await IMA.execute_send_on_method_with_arguments( mn, joAccountMN, methodWithArguments_setOtherParticipant_MN, joChatParticipantMN.options.address, null, null, 0, 0, false, false );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     //
-    console.log( "Initializing SC chat participant, chain name..." );
+    IMA.write_log( "Initializing SC chat participant, chain name..." );
+    ts0 = IMA.ts_hr();
     const methodWithArguments_setThisChainName_SC = joChatParticipantSC.methods.setThisChainName( chain_name_sc );
     await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setThisChainName_SC, joChatParticipantSC.options.address, null, null, 0, 0, false, false );
-    console.log( "Initializing SC chat participant, message proxy..." );
+    IMA.write_log( "Initializing SC chat participant, message proxy..." );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+    ts0 = IMA.ts_hr();
     const methodWithArguments_setMessageProxy_SC = joChatParticipantSC.methods.setMessageProxy( sc.jo_message_proxy_s_chain.options.address );
     await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setMessageProxy_SC, joChatParticipantSC.options.address, null, null, 0, 0, false, false );
-    console.log( "Initializing SC chat participant, other participant reference..." );
+    IMA.write_log( "Initializing SC chat participant, other participant reference..." );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+    ts0 = IMA.ts_hr();
     const methodWithArguments_setOtherParticipant_SC = joChatParticipantSC.methods.setOtherParticipant( joChatParticipantMN.options.address );
     await IMA.execute_send_on_method_with_arguments( sc, joAccountSC, methodWithArguments_setOtherParticipant_SC, joChatParticipantSC.options.address, null, null, 0, 0, false, false );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     //
     const joRegistrarMN = joAccountMN;
     const joRegistrarSC = joAccountSC;
     //
-    console.log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on MN..." );
+    IMA.write_log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on MN..." );
     let haveNeededRoleMN = await IMA.role_check( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joRegistrarMN, joRegistrarMN );
-    console.log( "Done, got -", haveNeededRoleMN );
+    IMA.write_log( "Done, got", haveNeededRoleMN );
     if( ! haveNeededRoleMN ) {
-        console.log( "Granting EXTRA_CONTRACT_REGISTRAR_ROLE role on MN..." );
-        await IMA.role_grant( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joRegistrarMN, joRegistrarMN );
-        console.log( "Done." );
-        console.log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on MN..." );
+        IMA.write_log( "Granting EXTRA_CONTRACT_REGISTRAR_ROLE role on MN..." );
+        ts0 = IMA.ts_hr();
+        await IMA.role_grant( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joRegistrarMN, joRegistrarMN, opts );
+        ts1 = IMA.ts_hr();
+        IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+        IMA.write_log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on MN..." );
         haveNeededRoleMN = await IMA.role_check( mn, mn.jo_message_proxy_main_net, "EXTRA_CONTRACT_REGISTRAR_ROLE", joRegistrarMN, joRegistrarMN );
-        console.log( "Done, got -", haveNeededRoleMN );
+        IMA.write_log( "Done, got", haveNeededRoleMN );
     }
     //
-    console.log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on SC..." );
+    IMA.write_log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on SC..." );
     let haveNeededRoleSC = await IMA.role_check( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joRegistrarSC, joRegistrarSC );
-    console.log( "Done, got -", haveNeededRoleSC );
+    IMA.write_log( "Done, got", haveNeededRoleSC );
     if( ! haveNeededRoleSC ) {
-        console.log( "Granting EXTRA_CONTRACT_REGISTRAR_ROLE role on SC..." );
-        await IMA.role_grant( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joRegistrarSC, joRegistrarSC );
-        console.log( "Done." );
-        console.log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on SC..." );
+        IMA.write_log( "Granting EXTRA_CONTRACT_REGISTRAR_ROLE role on SC..." );
+        ts0 = IMA.ts_hr();
+        await IMA.role_grant( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joRegistrarSC, joRegistrarSC, opts );
+        ts1 = IMA.ts_hr();
+        IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+        IMA.write_log( "Checking needed EXTRA_CONTRACT_REGISTRAR_ROLE role on SC..." );
         haveNeededRoleSC = await IMA.role_check( sc, sc.jo_message_proxy_s_chain, "EXTRA_CONTRACT_REGISTRAR_ROLE", joRegistrarSC, joRegistrarSC );
-        console.log( "Done, got -", haveNeededRoleSC );
+        IMA.write_log( "Done, got", haveNeededRoleSC );
     }
     //
-    console.log( "Registering MN chat participant..." );
+    IMA.write_log( "Registering MN chat participant..." );
+    ts0 = IMA.ts_hr();
     const methodWithArguments_registerExtraContractMN = mn.jo_message_proxy_main_net.methods.registerExtraContract( sc.chainName, joChatParticipantMN.options.address );
     await IMA.execute_send_on_method_with_arguments( mn, joRegistrarMN, methodWithArguments_registerExtraContractMN, mn.jo_message_proxy_main_net.options.address, null, null, 0, 0, false, false );
-    console.log( "Registering SC chat participant..." );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+    IMA.write_log( "Registering SC chat participant..." );
+    ts0 = IMA.ts_hr();
     const methodWithArguments_registerExtraContractSC = sc.jo_message_proxy_s_chain.methods.registerExtraContract( mn.chainName, joChatParticipantSC.options.address );
     await IMA.execute_send_on_method_with_arguments( sc, joRegistrarSC, methodWithArguments_registerExtraContractSC, sc.jo_message_proxy_s_chain.options.address, null, null, 0, 0, false, false );
+    ts1 = IMA.ts_hr();
+    IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     //
     //
     //
@@ -514,32 +624,37 @@ async function run() {
         const chainDst = ( joPlannedMessage.direction == "M2S" ) ? sc : mn;
         const joAccountSrc = ( joPlannedMessage.direction == "M2S" ) ? joAccountMN : joAccountSC;
         const joAccountDst = ( joPlannedMessage.direction == "M2S" ) ? joAccountSC : joAccountMN;
-        console.log( ">>> " + joPlannedMessage.direction + ", " + nicknameSrc + " to " + nicknameDst + " => " + joPlannedMessage.text );
+        IMA.write_log( ">>> " + joPlannedMessage.direction + ", " + nicknameSrc + " to " + nicknameDst + " => " + joPlannedMessage.text );
+        ts0 = IMA.ts_hr();
         const methodWithArguments_sendToOtherChain = joChatParticipantSrc.methods.sendToOtherChain( chainDst.chainName, nicknameSrc, joPlannedMessage.text );
-        await IMA.execute_send_on_method_with_arguments( chainSrc, joAccountSrc, methodWithArguments_sendToOtherChain, joChatParticipantSrc.options.address, null, null, 0, 0, false, false );
-        console.log( "    transferring..." );
+        IMA.execute_send_on_method_with_arguments( chainSrc, joAccountSrc, methodWithArguments_sendToOtherChain, joChatParticipantSrc.options.address, null, null, 0, 0, false, false );
+        ts1 = IMA.ts_hr();
+        IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
+        IMA.write_log( "    Waiting for message arrival..." );
+        ts0 = IMA.ts_hr();
         for( ; true; ) {
             let lastReceivedMessage = null;
             try {
                 lastReceivedMessage = await joChatParticipantDst.methods.getLastReceivedMessage().call( { from: IMA.get_account_wallet_address( chainDst.w3, joAccountDst ) } );
             } catch ( err ) {
-                // console.log( "    error", err.toString() );
+                // IMA.write_log( "    error", err.toString() );
                 await IMA.sleep( 1000 );
                 continue;
             }
             const msg = { nickname: "" + lastReceivedMessage.nickname_, text: "" + lastReceivedMessage.text_ };
             if( ! ( nicknameSrc == msg.nickname && joPlannedMessage.text == msg.text ) ) {
-                // console.log( "    not delivered yet" );
+                // IMA.write_log( "    not delivered yet" );
                 await IMA.sleep( 1000 );
                 continue;
             }
             break;
         }
+        ts1 = IMA.ts_hr();
+        IMA.write_log( "    Done, duration is " + IMA.get_duration_string( ts0, ts1 ) );
     }
     /**/
 
-    console.log( "Success. Test finished." );
+    IMA.write_log( "Success. Test finished." );
 }
 
 run();
-
