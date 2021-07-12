@@ -1096,11 +1096,7 @@ function get_account_connectivity_info( joAccount ) {
         strType: "bad",
         isAutoSend: false
     };
-    if( "strTransactionManagerURL" in joAccount && typeof joAccount.strTransactionManagerURL == "string" && joAccount.strTransactionManagerURL.length > 0 ) {
-        joACI.isBad = false;
-        joACI.strType = "tm";
-        joACI.isAutoSend = true;
-    } else if( "strSgxURL" in joAccount && typeof joAccount.strSgxURL == "string" && joAccount.strSgxURL.length > 0 &&
+    if( "strSgxURL" in joAccount && typeof joAccount.strSgxURL == "string" && joAccount.strSgxURL.length > 0 &&
         "strSgxKeyName" in joAccount && typeof joAccount.strSgxKeyName == "string" && joAccount.strSgxKeyName.length > 0
     ) {
         joACI.isBad = false;
@@ -1143,39 +1139,6 @@ async function safe_sign_transaction_with_account( w3, tx, rawTx, joAccount ) {
         txHashSent: null
     };
     switch ( joSR.joACI.strType ) {
-    case "tm": {
-        let rpcCallOpts = null;
-        if( "strSslKey" in joAccount && typeof joAccount.strSslKey == "string" && joAccount.strSslKey.length > 0 &&
-            "strSslCert" in joAccount && typeof joAccount.strSslCert == "string" && joAccount.strSslCert.length > 0
-        ) {
-            rpcCallOpts = {
-            };
-        }
-        await rpc_call_create( joAccount.strTransactionManagerURL, rpcCallOpts, async function( joCall, err ) {
-            if( err )
-                return;
-            const txAdjusted = JSON.parse( JSON.stringify( rawTx ) );
-            if( "chainId" in txAdjusted )
-                delete txAdjusted.chainId;
-            if( "gasLimit" in txAdjusted && ( ! ( "gas" in txAdjusted ) ) ) {
-                txAdjusted.gas = txAdjusted.gasLimit;
-                delete txAdjusted.gasLimit;
-            }
-            const joIn = {
-                "transaction_dict": JSON.stringify( txAdjusted )
-            };
-            await joCall.call( joIn, /*async*/ function( joIn, joOut, err ) {
-                if( err )
-                    return;
-                if( joOut && "data" in joOut && joOut.data && "transaction_hash" in joOut.data )
-                    joSR.txHashSent = "" + joOut.data.transaction_hash;
-                else
-                    return;
-            } );
-        } );
-        await sleep( 5000 );
-        await wait_for_transaction_receipt( w3, joSR.txHashSent );
-    } break;
     case "sgx": {
         let rpcCallOpts = null;
         if( "strSslKey" in joAccount && typeof joAccount.strSslKey == "string" && joAccount.strSslKey.length > 0 &&

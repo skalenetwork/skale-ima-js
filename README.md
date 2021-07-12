@@ -95,7 +95,6 @@ The **Account** object defines wallet to use. It can be:
 
 - Explicit and insecure private key reference
 - **SGX Wallet** reference
-- **Transaction Manager** reference
 
 To initialize explicit and insecure private reference account:
 
@@ -114,15 +113,6 @@ const joAccount = {
     strSgxKeyName: ...,
     strSslKey: ..., // key as text content
     strSslCert: ... // cert as text content
-};
-```
-
-To initialize **Transaction Manager** reference:
-
-```js
-const joAccount = {
-    address_: "0x.....", // provide address for private key that is hidden inside SGX wallet
-    strTransactionManagerURL: ...
 };
 ```
 
@@ -468,4 +458,4 @@ const w3 =  helper_utils.getWeb3FromURL( "http://127.0.0.1:8545" );
 
 - Server side **Node JS** version requires dependencies to be installed with `npm install` or `yarn install`
 - CJS version only
-- **SGX** and **Transaction Manager** are supported by server side version only
+- **SGX** is supported by server side version only
