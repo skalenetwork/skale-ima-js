@@ -1114,23 +1114,23 @@ function get_account_connectivity_info( joAccount ) {
     return joACI;
 }
 
-async function wait_for_transaction_receipt( w3, txHash, nMaxWaitAttempts, nSleepMilliseconds ) {
-    if( w3 == null || w3 == undefined || txHash == null || txHash == undefined || typeof txHash != "string" || txHash.length == 0 )
-        return null;
-    nMaxWaitAttempts = nMaxWaitAttempts || 100;
-    nSleepMilliseconds = nSleepMilliseconds || 5000;
-    let idxAttempt;
-    for( idxAttempt = 0; idxAttempt < nMaxWaitAttempts; ++ idxAttempt ) {
-        try {
-            const joReceipt = await get_web3_transactionReceipt( 10, w3, txHash ); // await w3.eth.getTransactionReceipt( txHash );
-            if( joReceipt != null )
-                return joReceipt;
-        } catch ( err ) {
-        }
-        await sleep( nSleepMilliseconds );
-    }
-    return null;
-}
+// async function wait_for_transaction_receipt( w3, txHash, nMaxWaitAttempts, nSleepMilliseconds ) {
+//     if( w3 == null || w3 == undefined || txHash == null || txHash == undefined || typeof txHash != "string" || txHash.length == 0 )
+//         return null;
+//     nMaxWaitAttempts = nMaxWaitAttempts || 100;
+//     nSleepMilliseconds = nSleepMilliseconds || 5000;
+//     let idxAttempt;
+//     for( idxAttempt = 0; idxAttempt < nMaxWaitAttempts; ++ idxAttempt ) {
+//         try {
+//             const joReceipt = await get_web3_transactionReceipt( 10, w3, txHash ); // await w3.eth.getTransactionReceipt( txHash );
+//             if( joReceipt != null )
+//                 return joReceipt;
+//         } catch ( err ) {
+//         }
+//         await sleep( nSleepMilliseconds );
+//     }
+//     return null;
+// }
 
 async function safe_sign_transaction_with_account( w3, tx, rawTx, joAccount ) {
     const joSR = {

@@ -33,7 +33,7 @@ const helper_utils = require( "./helper_utils.js" );
 const pk_mn = process.env.PRIVATE_KEY_FOR_ETHEREUM || "23ABDBD3C61B5330AF61EBE8BEF582F4E5CC08E554053A718BDCE7813B9DC1FC"; // address 0x7aa5E36AA15E93D10F4F26357C30F052DacDde5F
 const pk_sc = process.env.PRIVATE_KEY_FOR_SCHAIN || "80ebc2e00b8f13c5e2622b5694ab63ee80f7c5399554d2a12feeb0212eb8c69e"; // address 0x66c5a87f4a49DD75e970055A265E8dd5C3F8f852
 const url_mn = process.env.URL_W3_ETHEREUM || "http://127.0.0.1:8545";
-const url_sc_00 = process.env.URL_W3_NODE_00 || process.env.URL_W3_SCHAIN || "http://127.0.0.1:15000";
+const url_sc_00 = process.env.URL_W3_NODE_00 || process.env.URL_W3_SCHAIN || "http://127.0.0.1:15000"; // "http://127.0.0.1:15000" // "ws://127.0.0.1:15020"
 // const url_sc_01 = process.env.URL_W3_NODE_01 || "http://127.0.0.1:15100";
 const path_abi_mn = helper_utils.normalizePath( process.env.IMA_ABI_PATH_ETHEREUM || "~/Work/functional-test/functional_check/IMA/proxy/data/proxyMainnet.json" );
 const path_abi_sc = helper_utils.normalizePath( process.env.IMA_ABI_PATH_SCHAIN || "~/Work/functional-test/functional_check/IMA/proxy/data/proxySchain_Bob.json" );
@@ -652,6 +652,7 @@ async function run() {
     /**/
 
     IMA.write_log( "Success. Test finished." );
+    process.exit( 0 );
 }
 
 run();
