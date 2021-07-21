@@ -412,7 +412,7 @@ class ima_TransactionCustomizer {
             if( gasPrice * this.gasPriceMultiplier > maxGasPrice )
                 return parseIntOrHex( maxGasPrice );
             else
-                return gasPrice * this.gasPriceMultiplier;
+                return parseIntOrHex( ( gasPrice * this.gasPriceMultiplier ).toString() );
         } else
             return gasPrice;
     }
@@ -770,7 +770,7 @@ async function impl_enableAutomaticDeploy(
     const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
     const gasPrice = 10000000000;
     const strAddressFrom = get_account_wallet_address( sc.w3, joAccountSrc );
-    const tcnt = await get_web3_transactionCount( 10, sc.w3, strAddressFrom, null ); // await sc.w3.eth.getTransactionCount( strAddressFrom, null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, sc.w3, strAddressFrom, null ) ); // await sc.w3.eth.getTransactionCount( strAddressFrom, null );
     const rawTx = {
         chainId: sc.chainID,
         nonce: tcnt,
@@ -811,7 +811,7 @@ async function ima_addERC20TokenByOwnerMN( mn, joAccountSrc, strSChainName, strC
     const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
     const gasPrice = 10000000000;
     const strAddressFrom = get_account_wallet_address( mn.w3, joAccountSrc );
-    const tcnt = await get_web3_transactionCount( 10, mn.w3, strAddressFrom, null ); // await mn.w3.eth.getTransactionCount( strAddressFrom, null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, mn.w3, strAddressFrom, null ) ); // await mn.w3.eth.getTransactionCount( strAddressFrom, null );
     const rawTx = {
         chainId: mn.chainID,
         nonce: tcnt,
@@ -840,7 +840,7 @@ async function ima_addERC721TokenByOwnerMN( mn, joAccountSrc, strSChainName, str
     const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
     const gasPrice = 10000000000;
     const strAddressFrom = get_account_wallet_address( mn.w3, joAccountSrc );
-    const tcnt = await get_web3_transactionCount( 10, mn.w3, strAddressFrom, null ); // await mn.w3.eth.getTransactionCount( strAddressFrom, null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, mn.w3, strAddressFrom, null ) ); // await mn.w3.eth.getTransactionCount( strAddressFrom, null );
     const rawTx = {
         chainId: mn.chainID,
         nonce: tcnt,
@@ -869,7 +869,7 @@ async function ima_addERC1155TokenByOwnerMN( mn, joAccountSrc, strSChainName, st
     const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
     const gasPrice = 10000000000;
     const strAddressFrom = get_account_wallet_address( mn.w3, joAccountSrc );
-    const tcnt = await get_web3_transactionCount( 10, mn.w3, strAddressFrom, null ); // await mn.w3.eth.getTransactionCount( strAddressFrom, null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, mn.w3, strAddressFrom, null ) ); // await mn.w3.eth.getTransactionCount( strAddressFrom, null );
     const rawTx = {
         chainId: mn.chainID,
         nonce: tcnt,
@@ -899,7 +899,7 @@ async function ima_addERC20TokenByOwnerSC( sc, joAccountSrc, strSChainName, strC
     const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
     const gasPrice = 10000000000;
     const strAddressFrom = get_account_wallet_address( sc.w3, joAccountSrc );
-    const tcnt = await get_web3_transactionCount( 10, sc.w3, strAddressFrom, null ); // await sc.w3.eth.getTransactionCount( strAddressFrom, null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, sc.w3, strAddressFrom, null ) ); // await sc.w3.eth.getTransactionCount( strAddressFrom, null );
     const rawTx = {
         chainId: sc.chainID,
         nonce: tcnt,
@@ -929,7 +929,7 @@ async function ima_addERC721TokenByOwnerSC( sc, joAccountSrc, strSChainName, str
     const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
     const gasPrice = 10000000000;
     const strAddressFrom = get_account_wallet_address( sc.w3, joAccountSrc );
-    const tcnt = await get_web3_transactionCount( 10, sc.w3, strAddressFrom, null ); // await sc.w3.eth.getTransactionCount( strAddressFrom, null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, sc.w3, strAddressFrom, null ) ); // await sc.w3.eth.getTransactionCount( strAddressFrom, null );
     const rawTx = {
         chainId: sc.chainID,
         nonce: tcnt,
@@ -959,7 +959,7 @@ async function ima_addERC1155TokenByOwnerSC( sc, joAccountSrc, strSChainName, st
     const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
     const gasPrice = 10000000000;
     const strAddressFrom = get_account_wallet_address( sc.w3, joAccountSrc );
-    const tcnt = await get_web3_transactionCount( 10, sc.w3, strAddressFrom, null ); // await sc.w3.eth.getTransactionCount( strAddressFrom, null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, sc.w3, strAddressFrom, null ) ); // await sc.w3.eth.getTransactionCount( strAddressFrom, null );
     const rawTx = {
         chainId: sc.chainID,
         nonce: tcnt,
@@ -1166,7 +1166,7 @@ async function safe_sign_transaction_with_account( w3, tx, rawTx, joAccount ) {
                 if( err )
                     return;
                 const joNeededResult = {
-                    "v": parseIntOrHex( joOut.result.signature_v, 10 ),
+                    "v": parseIntOrHex( joOut.result.signature_v ),
                     "r": "" + joOut.result.signature_r,
                     "s": "" + joOut.result.signature_s
                 };
@@ -1268,7 +1268,7 @@ async function dry_run_call( w3, methodWithArguments, joAccount, isDryRunResultI
 async function ima_depositETHtoSchain( chainFrom, chainTo, joAccountFrom, joAccountTo, weiTransfer, opts ) {
     transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerMN;
     const jarrReceipts = [];
-    const tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
     const methodWithArguments = chainFrom.jo_deposit_box_eth.methods.deposit(
         ( typeof chainTo == "string" ) ? chainTo : chainTo.chainName,
         get_account_wallet_address( chainFrom.w3, joAccountTo ) //  destination account on S-chain
@@ -1321,7 +1321,7 @@ async function ima_withdrawETHfromSchain( chainFrom, chainTo, joAccountFrom, joA
     transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerSC;
     const jarrReceipts = [];
     let gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
-    const tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
     const methodWithArguments = chainFrom.jo_token_manager_eth.methods.exitToMain(
         get_account_wallet_address( chainTo.w3, joAccountTo ),
         "0x" + chainFrom.w3.utils.toBN( weiTransfer ).toString( 16 )
@@ -1368,7 +1368,7 @@ async function ima_depositERC20toSchain( chainFrom, chainTo, joAccountFrom, joAc
     const tokenInfoFrom = chainFrom.extractTokenInfo( tokenInfoOrAddressFrom );
     transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerMN;
     const jarrReceipts = []; // do_erc20_payment_from_main_net
-    let tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    let tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
     const contractERC20 = new chainFrom.w3.eth.Contract( tokenInfoFrom.abi, tokenInfoFrom.address );
     // prepare the smart contract function deposit(string schainID, address to)
     const depositBoxAddress = chainFrom.jo_deposit_box_erc20.options.address;
@@ -1420,7 +1420,7 @@ async function ima_depositERC20toSchain( chainFrom, chainTo, joAccountFrom, joAc
     gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
     const estimatedGas_deposit = await transactionCustomizer.computeGas( methodWithArguments_rawDepositERC20, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
     await dry_run_call( chainFrom.w3, methodWithArguments_rawDepositERC20, joAccountFrom, opts.isIgnoreDRC_rawDepositERC20 ? true : false, gasPrice, estimatedGas_deposit );
-    tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
     // tcnt += 1;
     const rawTxDeposit = {
         chainId: chainFrom.chainID,
@@ -1485,7 +1485,7 @@ async function ima_withdrawERC20fromSchain( chainFrom, chainTo, joAccountFrom, j
     let gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
     const estimatedGas_approve = await transactionCustomizer.computeGas( methodWithArguments_approve, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
     await dry_run_call( chainFrom.w3, methodWithArguments_approve, joAccountFrom, opts.isIgnoreDRC_approve ? true : false, gasPrice, estimatedGas_approve );
-    let tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    let tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) );
     const rawTxApprove = {
         chainId: chainFrom.chainID,
         from: accountForSchain,
@@ -1515,7 +1515,7 @@ async function ima_withdrawERC20fromSchain( chainFrom, chainTo, joAccountFrom, j
     if( g_bWaitForNextBlockOnSChain )
         await wait_for_next_block_to_appear( chainFrom.w3 );
     const estimatedGas_rawExitToMainERC20 = await transactionCustomizer.computeGas( methodWithArguments_rawExitToMainERC20, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
-    tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) );
     gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
     await dry_run_call( chainFrom.w3, methodWithArguments_rawExitToMainERC20, joAccountFrom, opts.isIgnoreDRC_rawExitToMainERC20 ? true : false, gasPrice, estimatedGas_rawExitToMainERC20 );
     const rawTxExitToMainERC20 = {
@@ -1557,7 +1557,7 @@ async function ima_depositERC721toSchain( chainFrom, chainTo, joAccountFrom, joA
     const tokenInfoFrom = chainFrom.extractTokenInfo( tokenInfoOrAddressFrom );
     transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerMN;
     const jarrReceipts = []; // do_erc721_payment_from_main_net
-    let tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    let tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
     const contractERC721 = new chainFrom.w3.eth.Contract( tokenInfoFrom.abi, tokenInfoFrom.address );
     // prepare the smart contract function deposit(string schainID, address to)
     const depositBoxAddress = chainFrom.jo_deposit_box_erc721.options.address;
@@ -1671,7 +1671,7 @@ async function ima_withdrawERC721fromSchain( chainFrom, chainTo, joAccountFrom, 
     );
     dataTxExitToMainERC721 = methodWithArguments_rawExitToMainERC721.encodeABI();
     let gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
-    let tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    let tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
     const estimatedGas_transferFrom = await transactionCustomizer.computeGas( methodWithArguments_transferFrom, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
     await dry_run_call( chainFrom.w3, methodWithArguments_transferFrom, joAccountFrom, opts.isIgnoreDRC_transferFrom ? true : false, gasPrice, estimatedGas_transferFrom );
     const rawTxTransferFrom = {
@@ -1702,7 +1702,7 @@ async function ima_withdrawERC721fromSchain( chainFrom, chainTo, joAccountFrom, 
         await sleep( g_nSleepBetweenTransactionsOnSChainMilliseconds );
     if( g_bWaitForNextBlockOnSChain )
         await wait_for_next_block_to_appear( chainFrom.w3 );
-    tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); //  await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) ); //  await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
     gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
     const estimatedGas_exitToMainERC721 = await transactionCustomizer.computeGas( methodWithArguments_rawExitToMainERC721, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
     await dry_run_call( chainFrom.w3, methodWithArguments_rawExitToMainERC721, joAccountFrom, opts.isIgnoreDRC_rawExitToMainERC721 ? true : false, gasPrice, estimatedGas_exitToMainERC721 );
@@ -1745,7 +1745,7 @@ async function ima_depositERC1155toSchain( chainFrom, chainTo, joAccountFrom, jo
     const tokenInfoFrom = chainFrom.extractTokenInfo( tokenInfoOrAddressFrom );
     transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerMN;
     const jarrReceipts = []; // do_erc1155_payment_from_main_net
-    let tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    let tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
     const contractERC1155 = new chainFrom.w3.eth.Contract( tokenInfoFrom.abi, tokenInfoFrom.address );
     const depositBoxAddress = chainFrom.jo_deposit_box_erc1155.options.address;
     const accountForSchain = get_account_wallet_address( chainTo.w3, joAccountTo );
@@ -1797,7 +1797,7 @@ async function ima_depositERC1155toSchain( chainFrom, chainTo, joAccountFrom, jo
     gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
     const estimatedGas_deposit = await transactionCustomizer.computeGas( methodWithArguments_rawDepositERC1155, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
     await dry_run_call( chainFrom.w3, methodWithArguments_rawDepositERC1155, joAccountFrom, opts.isIgnoreDRC_rawDepositERC1155 ? true : false, gasPrice, estimatedGas_deposit );
-    tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
     // tcnt += 1;
     const rawTxDeposit = {
         chainId: chainFrom.chainID,
@@ -1863,7 +1863,7 @@ async function ima_withdrawERC1155fromSchain( chainFrom, chainTo, joAccountFrom,
     let gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
     const estimatedGas_approve = await transactionCustomizer.computeGas( methodWithArguments_approve, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
     await dry_run_call( chainFrom.w3, methodWithArguments_approve, joAccountFrom, opts.isIgnoreDRC_approve ? true : false, gasPrice, estimatedGas_approve );
-    let tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    let tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) );
     const rawTxApprove = {
         chainId: chainFrom.chainID,
         from: accountForSchain,
@@ -1893,7 +1893,7 @@ async function ima_withdrawERC1155fromSchain( chainFrom, chainTo, joAccountFrom,
     if( g_bWaitForNextBlockOnSChain )
         await wait_for_next_block_to_appear( chainFrom.w3 );
     const estimatedGas_rawExitToMainERC1155 = await transactionCustomizer.computeGas( methodWithArguments_rawExitToMainERC1155, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
-    tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) );
     gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
     await dry_run_call( chainFrom.w3, methodWithArguments_rawExitToMainERC1155, joAccountFrom, opts.isIgnoreDRC_rawExitToMainERC1155 ? true : false, gasPrice, estimatedGas_rawExitToMainERC1155 );
     const rawTxExitToMainERC1155 = {
@@ -1944,7 +1944,7 @@ async function ima_depositBatchOfERC1155toSchain( chainFrom, chainTo, joAccountF
     const tokenInfoFrom = chainFrom.extractTokenInfo( tokenInfoOrAddressFrom );
     transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerMN;
     const jarrReceipts = []; // do_batch_erc1155_payment_from_main_net
-    let tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    let tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
     const contractERC1155 = new chainFrom.w3.eth.Contract( tokenInfoFrom.abi, tokenInfoFrom.address );
     const depositBoxAddress = chainFrom.jo_deposit_box_erc1155.options.address;
     const accountForSchain = get_account_wallet_address( chainTo.w3, joAccountTo );
@@ -1996,7 +1996,7 @@ async function ima_depositBatchOfERC1155toSchain( chainFrom, chainTo, joAccountF
     gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
     const estimatedGas_deposit = await transactionCustomizer.computeGas( methodWithArguments_depositERC1155Batch, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
     await dry_run_call( chainFrom.w3, methodWithArguments_depositERC1155Batch, joAccountFrom, opts.isIgnoreDRC_rawDepositERC1155Batch ? true : false, gasPrice, estimatedGas_deposit );
-    tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
     // tcnt += 1;
     const rawTxDepositBatch = {
         chainId: chainFrom.chainID,
@@ -2062,7 +2062,7 @@ async function ima_withdrawBatchOfERC1155fromSchain( chainFrom, chainTo, joAccou
     let gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
     const estimatedGas_approve = await transactionCustomizer.computeGas( methodWithArguments_approve, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
     await dry_run_call( chainFrom.w3, methodWithArguments_approve, joAccountFrom, opts.isIgnoreDRC_approve ? true : false, gasPrice, estimatedGas_approve );
-    let tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    let tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) );
     const rawTxApprove = {
         chainId: chainFrom.chainID,
         from: accountForSchain,
@@ -2092,7 +2092,7 @@ async function ima_withdrawBatchOfERC1155fromSchain( chainFrom, chainTo, joAccou
     if( g_bWaitForNextBlockOnSChain )
         await wait_for_next_block_to_appear( chainFrom.w3 );
     const estimatedGas_rawExitToMainERC1155 = await transactionCustomizer.computeGas( methodWithArguments_rawExitToMainERC1155, chainFrom.w3, 8000000, gasPrice, get_account_wallet_address( chainFrom.w3, joAccountFrom ) );
-    tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) );
     gasPrice = await transactionCustomizer.computeGasPrice( chainFrom.w3, 200000000000 );
     await dry_run_call( chainFrom.w3, methodWithArguments_rawExitToMainERC1155, joAccountFrom, opts.isIgnoreDRC_rawExitToMainERC1155Batch ? true : false, gasPrice, estimatedGas_rawExitToMainERC1155 );
     const rawTxExitToMainERC1155Batch = {
@@ -2142,7 +2142,7 @@ async function ima_viewETHtoReceive( chain, walletAddress ) {
 /*
     transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerMN;
     const jarrReceipts = [];
-    const tcnt = await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chainFrom.w3, get_account_wallet_address( chainFrom.w3, joAccountFrom ), null ) ); // await chainFrom.w3.eth.getTransactionCount( get_account_wallet_address( chainFrom.w3, joAccountFrom ), null );
     const methodWithArguments = chainFrom.jo_deposit_box_eth.methods.deposit(
         ( typeof chainTo == "string" ) ? chainTo : chainTo.chainName,
         get_account_wallet_address( chainFrom.w3, joAccountTo ) //  destination account on S-chain
@@ -2158,7 +2158,7 @@ async function ima_receiveETH( chain, joAccount, opts ) {
     const jarrReceipts = [];
     if( ! chain.isMainNet() )
         throw new Error( "Can receive ETH only on Main NET" );
-    const tcnt = await get_web3_transactionCount( 10, chain.w3, get_account_wallet_address( chain.w3, joAccount ), null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chain.w3, get_account_wallet_address( chain.w3, joAccount ), null ) );
     const methodWithArguments = chain.jo_deposit_box_eth.methods.getMyEth(
         // call params(empty)
     );
@@ -2219,7 +2219,7 @@ async function ima_reimbursementWalletRecharge(
 ) {
     transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerMN;
     const jarrReceipts = []; // reimbursement_wallet_recharge
-    const tcnt = await get_web3_transactionCount( 10, chain.w3, get_account_wallet_address( chain.w3, joAccount ), null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chain.w3, get_account_wallet_address( chain.w3, joAccount ), null ) );
     const methodWithArguments = chain.jo_community_pool.methods.rechargeUserWallet(
         strReimbursementChain
     );
@@ -2265,7 +2265,7 @@ async function ima_reimbursementWalletWithdraw(
     transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerMN;
     const jarrReceipts = []; // reimbursement_wallet_withdraw
     const wei_how_much = 0;
-    const tcnt = await get_web3_transactionCount( 10, chain.w3, get_account_wallet_address( chain.w3, joAccount ), null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chain.w3, get_account_wallet_address( chain.w3, joAccount ), null ) );
     const methodWithArguments = chain.jo_community_pool.methods.withdrawFunds(
         strReimbursementChain,
         "0x" + chain.w3.utils.toBN( nReimbursementWithdraw ).toString( 16 )
@@ -2312,7 +2312,7 @@ async function ima_reimbursementSetRange(
     transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerSC;
     const jarrReceipts = []; // reimbursement_set_range
     const wei_how_much = 0;
-    const tcnt = await get_web3_transactionCount( 10, chain.w3, get_account_wallet_address( chain.w3, joAccount ), null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chain.w3, get_account_wallet_address( chain.w3, joAccount ), null ) );
     const methodWithArguments = chain.jo_community_locker.methods.setTimeLimitPerMessage(
         // call params, last is destination account on S-chain
         "0x" + chain.w3.utils.toBN( nReimbursementRange ).toString( 16 )
@@ -2375,7 +2375,7 @@ async function ima_role_grant( chain, jo_contract, strRoleName, joAccountTo, joA
     transactionCustomizer = opts.transactionCustomizer || g_transactionCustomizerSC;
     const jarrReceipts = []; // reimbursement_set_range
     const wei_how_much = 0;
-    const tcnt = await get_web3_transactionCount( 10, chain.w3, get_account_wallet_address( chain.w3, joAccountOwner ), null );
+    const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chain.w3, get_account_wallet_address( chain.w3, joAccountOwner ), null ) );
     const methodWithArguments = jo_contract.methods.grantRole(
         // call params, last is destination account on S-chain
         chain.w3.utils.soliditySha3( strRoleName ), addressTo
@@ -2423,7 +2423,7 @@ async function ima_execute_send_on_method_with_arguments( chain, joAccount, meth
         try {
             const dataTx = methodWithArguments.encodeABI(); // the encoded ABI of the method
             const strAddressFrom = get_account_wallet_address( chain.w3, joAccount );
-            const tcnt = await get_web3_transactionCount( 10, chain.w3, strAddressFrom, null );
+            const tcnt = parseIntOrHex( await get_web3_transactionCount( 10, chain.w3, strAddressFrom, null ) );
             const rawTx = {
                 chainId: chain.chainID,
                 nonce: tcnt,
